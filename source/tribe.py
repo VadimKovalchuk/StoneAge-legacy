@@ -34,8 +34,8 @@ class Tribe:
         - (!not implemented) tribesman rectangle
         - owned instrument/weapon;
         - weared costume/armor;
-        - inventory (dictionary where key is a item and value is its nuber)
-        - custom atribute for quests purposes
+        - inventory (dictionary where key is a item and value is its number)
+        - custom attribute for quests purposes
         '''
 
         self.name = name
@@ -50,13 +50,13 @@ class Tribe:
         self.player_type = player
         self.AI = ai.Ai(self)
         self.resources = {
-            'food':        1,
-            'stocked_food':2,
-            'bones':       3,
-            'moist_skin':  4,
-            'skin':        5,
-            'wood':        6,
-            'rock':        7
+            FOOD:        1,
+            STOCKED_FOOD:2,
+            BONES:       3,
+            MOIST_SKIN:  4,
+            SKIN:        5,
+            WOOD:        6,
+            ROCK:        7
         }
 
         return None
@@ -108,8 +108,22 @@ class Tribe:
 
         Performs processing that should be done in the day phase.
         '''
+        if self.ready == True:
+            return None
+
         for group in self.parties:
-            group.interact()
+            if 'get' in group.purpose:
+                resource = group.purpose[4:]
+                self.Map.Rules.resource_gathering(group)
+            elif 'process' in group.purpose:
+                resource = group.purpose[8:]
+
+            elif 'quest' in group.purpose:
+                #Not implemented
+                pass
+            else:
+                assert False, 'incorrect party command syntax'+ str(self.purpose)
+        self.ready = True
 
         return None
 
@@ -120,6 +134,7 @@ class Tribe:
         Builds tribesmen sending query. Those that goes further are first(Not implemented).
         '''
         if len(self.parties) == 0:
+            self.ready = True
             return None
         self.send_query = []
         for group in self.parties:

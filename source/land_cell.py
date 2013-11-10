@@ -14,6 +14,7 @@ FOREST = constants['FOREST']    #Default is 'forest'
 MOUNTAIN = constants['MOUNTAIN']#Default is 'mountain'
 WATER = constants['WATER']      #Default is 'water'
 CAMP = constants['CAMP']        #Default is 'camp'
+#Resource richness in land cell
 EMPTY = constants['EMPTY']      #Default is 'empty'
 LOW = constants['LOW']          #Default is 'low'
 MODERATE = constants['MODERATE']#Default is 'moderate'
@@ -29,7 +30,7 @@ class LandCell:
         '''
         (land_cell, str, int, (int, int)) -> NoneType
 
-        Contains all infirmation about lend cell:
+        Contains all information about lend cell:
         - absolute land index
         - land type(grass, forest, water, rock, custom)
         - Reference to Loader object
@@ -48,7 +49,7 @@ class LandCell:
                                 LAND_CELL_WIDTH, LAND_CELL_HEIGHT)
         self.Loader = Loader
         self.tile_img = self.Loader.tiles[land_type]
-        self.resourses = {'food':0, 'hunt':0, 'wood':0, 'stone':0}
+        self.resources = {'food':0, 'hunt':0, 'wood':0, 'stone':0}
         self.resource_limit = {}
         self.predators = {'bear':0, 'wolfs':0, 'boar':0,'snake':0,
                           'rockfall':0, 'drawn':0}
@@ -81,22 +82,22 @@ class LandCell:
 
         if preset == 'default':
             if self.land_type == FIELD:
-                self.resourses['food'] = 100
-                self.resourses['hunt'] = 200
+                self.resources['food'] = 100
+                self.resources['hunt'] = 200
             elif self.land_type == FOREST:
-                self.resourses['food'] = 300
-                self.resourses['hunt'] = 500
-                self.resourses['wood'] = 500
+                self.resources['food'] = 300
+                self.resources['hunt'] = 500
+                self.resources['wood'] = 500
             elif self.land_type == MOUNTAIN:
-                self.resourses['food'] = 50
-                self.resourses['hunt'] = 100
-                self.resourses['stone'] = 500
+                self.resources['food'] = 50
+                self.resources['hunt'] = 100
+                self.resources['stone'] = 500
             elif self.land_type == WATER:
-                self.resourses['hunt'] = 500
+                self.resources['hunt'] = 500
         elif preset in ('player','CPU'):
             self.custom['preset'] = preset
 
-        self.resource_limit = self.resourses.copy()
+        self.resource_limit = self.resources.copy()
 
         return None
 
@@ -106,10 +107,10 @@ class LandCell:
 
         Calculates and returns richness of passed resource type
         '''
-        if self.resourses[resource] == 0:
+        if self.resources[resource] == 0:
             return EMPTY
-        margin = self.resource_limit[resource]/self.resourses[resource]
-        if 1 >= margin > 0.8:
+        margin = self.resources[resource]/self.resource_limit[resource]
+        if margin > 0.8:
             return RICH
         elif 0.8 >= margin > 0.5:
             return MANY
@@ -125,8 +126,17 @@ class LandCell:
         Returns passed type of resource
         '''
 
-        return self.resourses[resource]
+        return self.resources[resource]
 
+    def decrease_resource(self,resource, amount):
+        '''
+        (str, int) -> None
+
+        Decreases specified resource amount
+        '''
+        self.resources[resource] -= amount
+
+        return None
 
 
 

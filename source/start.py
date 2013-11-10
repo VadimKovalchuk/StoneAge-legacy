@@ -101,16 +101,7 @@ def main():
 
             elif event.type == MOUSEBUTTONUP:
                 SideMenu.mouseInput(pygame.mouse.get_pos())
-        '''
-        # Vaiting for 5 seconds to add one more tribesman
-        if (pygame.time.get_ticks() - five_seconds) >= 1000 :
-            five_seconds = pygame.time.get_ticks()
-            for meeple in Camp.population:
-                if meeple.visible == False:
-                    gloryCircle2(meeple)
-                    Map.active_sprites.append(meeple)
-                    break
-        '''
+
         #Performing game flow and changing game state
         Map.flow()
 

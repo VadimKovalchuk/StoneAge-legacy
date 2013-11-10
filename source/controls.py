@@ -65,15 +65,6 @@ class SideMenu:
             'stone':'stone_button',
             'hunt': 'meat_button'
         }
-        self.tribe_image_for = {
-            'food':        1,
-            'stocked_food':2,
-            'bones':       3,
-            'moist_skin':  4,
-            'skin':        5,
-            'wood':        6,
-            'rock':        7
-        }
         self.menu_line = [WINDOW_WIDTH - SIDE_PANEL_WIDTH + \
                                     LINE_WIDTH * 4, LINE_WIDTH * 4]
         self.block_topleft = [0,0]
@@ -126,8 +117,8 @@ class SideMenu:
 
         if self.Map.PathFinder.get_path(self.Tribe.home_cell.cell,self.selected.cell):
             # Creates and blits button for each resource that higher than 0
-            for resource in self.selected.resourses:
-                if self.selected.resourses[resource] == 0:
+            for resource in self.selected.resources:
+                if self.selected.resources[resource] == 0:
                     continue
                 self._create_button(self.cell_image_for[resource],'get_' + resource)
                 self._next_line()
@@ -145,50 +136,53 @@ class SideMenu:
 
         Blits tribe menu section
         '''
+        first_text_column = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
+        second_button_column = int(BUTTON_SIZE *2.5)
+        second_text_column = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
+
         self._prepare_menu()
 
         self._blit_text(self.Tribe.name, 'header')
         self._next_line(self.HeaderText.get_height())
 
         self._create_button('tribesman_button',PROCESS_MAN)
-        text_offset = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
         self._blit_text('x ' + str(len(self.Tribe.population)),
-                        'header', text_offset)
+                        'header', first_text_column)
         self._next_line()
 
         self._blit_icon('meat_icon')
         self._blit_text('x ' + str(self.Tribe.resources['food']),
-                        'header', text_offset)
-        self._next_line()
+                        'header', first_text_column)
 
-        self._create_button('stocked_button',PROCESS_FOOD)
+        self._create_button('stocked_button',PROCESS_FOOD,
+                            offset=second_button_column)
         self._blit_text('x ' + str(self.Tribe.resources['stocked_food']),
-                        'header', text_offset)
+                        'header', second_text_column)
         self._next_line()
 
         self._blit_icon('bone_icon')
         self._blit_text('x ' + str(self.Tribe.resources['bones']),
-                        'header', text_offset)
+                        'header', first_text_column)
         self._next_line()
 
         self._blit_icon('moist_skin_icon')
         self._blit_text('x ' + str(self.Tribe.resources['moist_skin']),
-                        'header', text_offset)
-        self._next_line()
+                        'header', first_text_column)
 
-        self._create_button('skin_button',PROCESS_SKIN)
+        self._create_button('skin_button',PROCESS_SKIN,
+                            offset=second_button_column)
         self._blit_text('x ' + str(self.Tribe.resources['skin']),
-                        'header', text_offset)
+                        'header', second_text_column)
         self._next_line()
 
         self._blit_icon('wood_icon')
         self._blit_text('x ' + str(self.Tribe.resources['wood']),
-                        'header', text_offset)
+                        'header', first_text_column)
         self._next_line()
 
         self._blit_icon('stone_icon')
         self._blit_text('x ' + str(self.Tribe.resources['rock']),
-                        'header', text_offset)
+                        'header', first_text_column)
         self._next_line()
 
         self._compleate_menu()
@@ -386,6 +380,14 @@ class SideMenu:
         draw_rect.left = self.menu_line[0] + offset
         self.ScreenSurface.blit(self.Loader.controls[image],
                                  draw_rect)
+
+        return None
+
+    def _blit_richness(self, resource, offset= (0,0)):
+        '''
+        (str,(int,int)) -> None
+        Blits
+        '''
 
         return None
 
