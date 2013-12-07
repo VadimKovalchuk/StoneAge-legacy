@@ -52,11 +52,12 @@ RICH =      'rich'
 #Resource types
 FOOD =          'food'
 STOCKED_FOOD =  'stocked_food'
+HIDDEN_BONES =  'hidden_bones'
 BONES =         'bones'
 MOIST_SKIN =    'moist_skin'
 SKIN =          'skin'
 WOOD =          'wood'
-ROCK =          'rock'
+STONE =         'stone'
 
 def main():
     constants = {}
@@ -99,11 +100,12 @@ def main():
     constants['RICH']               = str(RICH)
     constants['FOOD']               = str(FOOD)
     constants['STOCKED_FOOD']       = str(STOCKED_FOOD)
+    constants['HIDDEN_BONES']       = str(HIDDEN_BONES)
     constants['BONES']              = str(BONES)
     constants['MOIST_SKIN']         = str(MOIST_SKIN)
     constants['SKIN']               = str(SKIN)
     constants['WOOD']               = str(WOOD)
-    constants['ROCK']               = str(ROCK)
+    constants['STONE']              = str(STONE)
 
     output_list.append('\nSet up window resolution')
     output_list.append('WINDOW_WIDTH')
@@ -153,12 +155,13 @@ def main():
     output_list.append('\nResource types')
     output_list.append('FOOD')
     output_list.append('STOCKED_FOOD')
+    output_list.append('HIDDEN_BONES')
     output_list.append('BONES')
     output_list.append('MOIST_SKIN')
     output_list.append('SKIN')
     output_list.append('MANY')
     output_list.append('WOOD')
-    output_list.append('ROCK')
+    output_list.append('STONE')
 
     file=open('..//setup.ini', 'w')
     for item in output_list:

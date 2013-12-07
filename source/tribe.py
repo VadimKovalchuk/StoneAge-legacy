@@ -13,10 +13,11 @@ SEND_INTERVAL = constants['SEND_INTERVAL']        #Default is 'food'
 FOOD =          constants['FOOD']        #Default is 'food'
 STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'
 BONES =         constants['BONES']       #Default is 'bones'
+HIDDEN_BONES =  constants['HIDDEN_BONES']#Default is 'hidden_bones'
 MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
 SKIN =          constants['SKIN']        #Default is 'skin'
 WOOD =          constants['WOOD']        #Default is 'wood'
-ROCK =          constants['ROCK']        #Default is 'rock'
+STONE =         constants['STONE']      #Default is 'stone'
 del constants
 '''___________________________________________________________'''
 
@@ -50,13 +51,14 @@ class Tribe:
         self.player_type = player
         self.AI = ai.Ai(self)
         self.resources = {
-            FOOD:        1,
-            STOCKED_FOOD:2,
-            BONES:       3,
-            MOIST_SKIN:  4,
-            SKIN:        5,
-            WOOD:        6,
-            ROCK:        7
+            FOOD:        [0,0,0],
+            STOCKED_FOOD:[0,0,0,0,0,0],
+            HIDDEN_BONES:[0,0,0],
+            BONES:       0,
+            MOIST_SKIN:  [0,0,0],
+            SKIN:        0,
+            WOOD:        0,
+            STONE:       0
         }
 
         return None
@@ -113,17 +115,79 @@ class Tribe:
 
         for group in self.parties:
             if 'get' in group.purpose:
-                resource = group.purpose[4:]
                 self.Map.Rules.resource_gathering(group)
             elif 'process' in group.purpose:
-                resource = group.purpose[8:]
-
+                pass
             elif 'quest' in group.purpose:
                 #Not implemented
                 pass
             else:
                 assert False, 'incorrect party command syntax'+ str(self.purpose)
         self.ready = True
+
+        return None
+
+    def everning(self):
+        '''
+        (None) - > None
+
+        Performs processing that should be done in the everning phase.
+        '''
+        if self.ready == True:
+            return None
+        self._loot_transfer()
+        self._feeding()
+        self._repository_maintanance()
+
+        self.ready = True
+
+        return None
+
+    def _loot_transfer(self):
+        '''
+        (None) -> None
+
+        Transferring gathered resources from parties to tribe repository
+        '''
+        for group in self.parties:
+            if 'get' in group.purpose:
+                for key in group.loot:
+                    self.add_resource(key,group.loot[key])
+            elif 'process' in group.purpose:
+                pass
+            elif 'quest' in group.purpose:
+                #Not implemented
+                pass
+            else:
+                assert False, 'Incorrect party command syntax'+ str(self.purpose)
+
+        return None
+
+    def _feeding(self):
+        '''
+        (None) -> None
+
+        Feeding tribesmen in the end of the day.
+        If required food amount is not enough than tribesman suffers one point.
+        If tribesmen point amount is 0 - he dies.
+        '''
+        length = len(self.resources[FOOD])
+        assert length == len(self.resources[HIDDEN_BONES]), \
+            'Incorrect BONES list length - ' + \
+            str(len(self.resources[HIDDEN_BONES]))
+        assert length == len(self.resources[MOIST_SKIN]), \
+            'Incorrect BONES list length - ' + \
+            str(len(self.resources[MOIST_SKIN]))
+
+        return None
+
+    def _repository_maintanance(self):
+        '''
+        (None) -> None
+
+        Shifts food and expiring date materials lists to one item up
+        '''
+        pass
 
         return None
 
@@ -148,14 +212,14 @@ class Tribe:
                     end = group.destination_cell
                 waypoint = self.Map.PathFinder.get_path(start, end)
                 party_member.travel(waypoint)
-        '''
+
         for n in range(0,len(self.send_query)-1):
             for i in range(0,len(self.send_query)-1):
                 if len(self.send_query[i].m_waypoints) < \
                         len(self.send_query[i+1].m_waypoints):
                     self.send_query[i],self.send_query[i+1] = \
                         self.send_query[i+1],self.send_query[i]
-        '''
+
         self.ready = True
 
         return None
@@ -194,6 +258,36 @@ class Tribe:
                     return False
         return True
 
+    def get_resource(self,type):
+        '''
+        (str) -> int
+
+        Returns available resource amount.
+        '''
+        result = 0
+        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN):
+            for item in self.resources[type]:
+                result += item
+        else:
+            result = self.resources[type]
+
+        return result
+
+    def add_resource(self, type, amount):
+        '''
+        (str, int) -> None
+
+        Adds passed number to specified resource
+        '''
+        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONES):
+            self.resources[type][0] += amount
+        elif type == 'hunt':
+            self.resources[FOOD][0] += amount
+            self.resources[HIDDEN_BONES][0] += amount // 2
+            self.resources[MOIST_SKIN][0] += amount // 4
+        else:
+            self.resources[type] += amount
+        return None
 
     def __str__(self):
         '''

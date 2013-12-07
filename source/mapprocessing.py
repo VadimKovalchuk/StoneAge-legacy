@@ -1,5 +1,6 @@
 from source import tools, land_cell, tribe
 from source import path_finder
+from source import rules
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -69,6 +70,7 @@ class Map:
         assert len(self.tribes), 'No tribes found at map'
         self.active_tribe = self.tribes[0]
         self.PathFinder = path_finder.PathFinder(self.map)
+        self.Rules = rules.Rules(self)
 
         return None
 
@@ -147,6 +149,7 @@ class Map:
                 elif self.game_phase == RETURN:
                     tribe.send_parties()
                 elif self.game_phase == EVENING:
+                    tribe.everning()
                     tribe.parties = []
                     tribe.ready = True
                 all_done_flag = False

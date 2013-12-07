@@ -17,7 +17,7 @@ BONES =         constants['BONES']       #Default is 'bones'
 MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
 SKIN =          constants['SKIN']        #Default is 'skin'
 WOOD =          constants['WOOD']        #Default is 'wood'
-ROCK =          constants['ROCK']        #Default is 'rock'
+ROCK =          constants['STONE']        #Default is 'rock'
 #Resource richness in land cell
 EMPTY = constants['EMPTY']      #Default is 'empty'
 LOW = constants['LOW']          #Default is 'low'

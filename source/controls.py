@@ -151,37 +151,37 @@ class SideMenu:
         self._next_line()
 
         self._blit_icon('meat_icon')
-        self._blit_text('x ' + str(self.Tribe.resources['food']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('food')),
                         'header', first_text_column)
 
         self._create_button('stocked_button',PROCESS_FOOD,
                             offset=second_button_column)
-        self._blit_text('x ' + str(self.Tribe.resources['stocked_food']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('stocked_food')),
                         'header', second_text_column)
         self._next_line()
 
         self._blit_icon('bone_icon')
-        self._blit_text('x ' + str(self.Tribe.resources['bones']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('bones')),
                         'header', first_text_column)
         self._next_line()
 
         self._blit_icon('moist_skin_icon')
-        self._blit_text('x ' + str(self.Tribe.resources['moist_skin']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('moist_skin')),
                         'header', first_text_column)
 
         self._create_button('skin_button',PROCESS_SKIN,
                             offset=second_button_column)
-        self._blit_text('x ' + str(self.Tribe.resources['skin']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('skin')),
                         'header', second_text_column)
         self._next_line()
 
         self._blit_icon('wood_icon')
-        self._blit_text('x ' + str(self.Tribe.resources['wood']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('wood')),
                         'header', first_text_column)
         self._next_line()
 
         self._blit_icon('stone_icon')
-        self._blit_text('x ' + str(self.Tribe.resources['rock']),
+        self._blit_text('x ' + str(self.Tribe.get_resource('stone')),
                         'header', first_text_column)
         self._next_line()
 
