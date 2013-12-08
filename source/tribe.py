@@ -117,7 +117,7 @@ class Tribe:
             if 'get' in group.purpose:
                 self.Map.Rules.resource_gathering(group)
             elif 'process' in group.purpose:
-                pass
+                self.Map.Rules.tribe_activities(group)
             elif 'quest' in group.purpose:
                 #Not implemented
                 pass
@@ -136,8 +136,8 @@ class Tribe:
         if self.ready == True:
             return None
         self._loot_transfer()
-        self._feeding()
-        self._repository_maintanance()
+        self.Map.Rules.feeding(self)
+        self.Map.Rules.repository_maintenance(self)
 
         self.ready = True
 
@@ -160,34 +160,6 @@ class Tribe:
                 pass
             else:
                 assert False, 'Incorrect party command syntax'+ str(self.purpose)
-
-        return None
-
-    def _feeding(self):
-        '''
-        (None) -> None
-
-        Feeding tribesmen in the end of the day.
-        If required food amount is not enough than tribesman suffers one point.
-        If tribesmen point amount is 0 - he dies.
-        '''
-        length = len(self.resources[FOOD])
-        assert length == len(self.resources[HIDDEN_BONES]), \
-            'Incorrect BONES list length - ' + \
-            str(len(self.resources[HIDDEN_BONES]))
-        assert length == len(self.resources[MOIST_SKIN]), \
-            'Incorrect BONES list length - ' + \
-            str(len(self.resources[MOIST_SKIN]))
-
-        return None
-
-    def _repository_maintanance(self):
-        '''
-        (None) -> None
-
-        Shifts food and expiring date materials lists to one item up
-        '''
-        pass
 
         return None
 

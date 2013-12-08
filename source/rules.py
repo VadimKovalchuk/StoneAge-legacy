@@ -13,6 +13,7 @@ CAMP = constants['CAMP']        #Default is 'camp'
 #Resource types
 FOOD =          constants['FOOD']        #Default is 'food'
 STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'
+HIDDEN_BONES =  constants['HIDDEN_BONES']#Default is 'hidden_bones'
 BONES =         constants['BONES']       #Default is 'bones'
 MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
 SKIN =          constants['SKIN']        #Default is 'skin'
@@ -114,7 +115,7 @@ class Rules:
         else:
             assert False, 'Invalid resource richness parameter "'+ richness + '"'
 
-    def _calculate_total_points(self,Party, penalty):
+    def _calculate_total_points(self,Party, penalty = 0):
         '''
         (Party, int) -> int
 
@@ -141,6 +142,123 @@ class Rules:
         cost = self.resource_cost_matrix[cell_type][resource]
 
         return cost
+
+    def tribe_activities(self, Party):
+        '''
+        (Party) -> None
+
+        Precess food from to stocked food.
+        '''
+        if 'food' in Party.purpose:
+            amount = self._calculate_total_points(Party)
+            rest = self.reduce_food(Party.Tribe,amount)
+            Party.Tribe.add_resource(STOCKED_FOOD,amount-rest)
+
+        return None
+
+    def feeding(self,Tribe):
+        '''
+        (None) -> None
+
+        Feeding tribesmen in the end of the day.
+        If required food amount is not enough than tribesman suffers one point.
+        If tribesmen point amount is 0 - he dies.
+        '''
+        feed = len(Tribe.population)
+        feed = self.reduce_food(Tribe,feed)
+        if feed == 0:
+            return None
+        feed = self.reduce_stocked_food(Tribe,feed)
+        if feed == 0:
+            return None
+        self._starving_tribe(Tribe)
+
+        return None
+
+    def reduce_food(self,Tribe,amount):
+        '''
+        (Tribe, int) -> int
+
+        Reduces tribes food list, transfers bones from hidden bones list to
+        bones one. Than iterate over food list from last item to first one.
+        If food list contains only zeros than return remained rest of
+        required food.
+        '''
+        length = len(Tribe.resources[FOOD])
+        food_list = Tribe.resources[FOOD]
+        hidden_bones_list = Tribe.resources[HIDDEN_BONES]
+        rest = amount
+
+        for i in range(length-1,-1,-1):
+            if food_list[i] == 0:
+                continue
+            elif rest > food_list[i]:
+                reduced = food_list[i]
+            else:
+                reduced = rest
+            rest -= reduced
+            food_list[i] -= reduced
+
+            if hidden_bones_list[i] == 0:
+                pass
+            elif reduced // 2 > hidden_bones_list[i]:
+                Tribe.resources[BONES] += hidden_bones_list[i]
+                hidden_bones_list[i] = 0
+            else:
+                hidden_bones_list[i] -= reduced // 2
+                Tribe.resources[BONES] += reduced //2
+
+            if rest ==0:
+                return 0
+
+        return rest
+
+    def reduce_stocked_food(self, Tribe, amount):
+        '''
+        (Tribe, int) -> int
+
+        Reduces tribes food list, transfers bones from hidden bones list to
+        bones one. Than iterate over food list from last item to first one.
+        If food list contains only zeros than return remained rest of
+        required food.
+        '''
+        length = len(Tribe.resources[STOCKED_FOOD])
+        food_list = Tribe.resources[STOCKED_FOOD]
+        rest = amount
+
+        for i in range(length-1,-1,-1):
+            if food_list[i] == 0:
+                continue
+            elif rest > food_list[i]:
+                reduced = food_list[i]
+            else:
+                reduced = rest
+            rest -= reduced
+            food_list[i] -= reduced
+            if rest ==0:
+                return 0
+
+        return rest
+
+        return 0
+
+    def _starving_tribe(self,Tribe):
+        pass
+
+        return None
+
+    def repository_maintenance(self,Tribe):
+        '''
+        (Tribe) -> None
+
+        Shifts food and expiring date materials lists to one item up
+        '''
+        for res in (FOOD,HIDDEN_BONES,MOIST_SKIN,STOCKED_FOOD):
+            for i in range(len(Tribe.resources[res])-1,0,-1):
+                Tribe.resources[res][i] = Tribe.resources[res][i-1]
+            Tribe.resources[res][0] = 0
+
+        return None
 
 
 
