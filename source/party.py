@@ -60,12 +60,15 @@ class Party:
         if 'get' in self.purpose:
             self.limits = {'min': 1, 'max': 5}
         elif 'process' in self.purpose:
+            self.destination_cell = self.Tribe.home_cell.cell
             if 'food' in self.purpose:
                 self.limits = {'min': 1, 'max': 1}
             elif 'skin' in self.purpose:
                 self.limits = {'min': 1, 'max': 1}
             elif 'man' in self.purpose:
                 self.limits = {'min': 2, 'max': 2}
+            elif 'heal' in self.purpose:
+                self.limits = {'min': 1, 'max': 15}
             else: assert False, 'Incorrect party command for tribe functionality'
         else: assert False, 'Incorrect party command type'
 

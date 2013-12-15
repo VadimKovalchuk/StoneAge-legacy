@@ -44,6 +44,7 @@ class Map:
         self.game_mode = 'regular'
         self.game_phase = 0
         self.move_counter = 0
+        self.update = False
 
         # Building starting map from map line
         for x in range(0,LAND_NUM_X):
@@ -161,7 +162,7 @@ class Map:
             if self.game_phase > 4:
                 self.game_phase = 0
             print('Game phase:',self.game_phase)
-
+            self.update = True
             for tribe in self.tribes:
                 tribe.ready = False
 

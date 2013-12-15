@@ -73,7 +73,7 @@ def main():
         Tribe.add_tribesman("Garu")
         Tribe.add_tribesman("Okupa")
         # 5
-        Tribe.add_tribesman("Timb")
+        '''Tribe.add_tribesman("Timb")
         Tribe.add_tribesman("Dema")
         Tribe.add_tribesman("Hala")
         Tribe.add_tribesman("Kibo")
@@ -83,7 +83,7 @@ def main():
         Tribe.add_tribesman("Aka")
         Tribe.add_tribesman("Lem")
         Tribe.add_tribesman("Nurg")
-        Tribe.add_tribesman("Pela")
+        Tribe.add_tribesman("Pela")'''
         Tribe.name = tribe_name[count]
         count += 1
 
@@ -113,7 +113,7 @@ def main():
 
         #Drawing new sprites. Side menu update if nescesary
         Map.blit_sprites()
-        if SideMenu.update == True:
+        if SideMenu.update or Map.update:
             SideMenu.blit_all()
 
         #UPDATING SCREEN

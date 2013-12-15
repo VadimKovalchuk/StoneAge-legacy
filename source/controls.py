@@ -19,18 +19,23 @@ del constants
 
 BUTTON_SIZE = 35
 LINE_WIDTH = 2
+FIRST_TEXT_COLUMN = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
+SECOND_BUTTON_COLUMN = int(BUTTON_SIZE *2.5)
+SECOND_TEXT_COLUMN = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
+
 #Buttons
 YES = 'yes'
 NO = 'no'
 PROCESS_MAN =  'process_man'
 PROCESS_FOOD = 'process_food'
 PROCESS_SKIN = 'process_skin'
+PROCESS_HEAL = 'process_heal'
 GET_FOOD = 'get_food'
 GET_HUNT = 'get_hunt'
 GET_WOOD = 'get_wood'
 GET_STONE = 'get_stone'
-FORM_PARTY = [PROCESS_MAN, PROCESS_FOOD, PROCESS_SKIN, GET_FOOD, GET_HUNT,
-              GET_WOOD, GET_STONE]
+FORM_PARTY = [PROCESS_MAN, PROCESS_FOOD, PROCESS_SKIN,PROCESS_HEAL,
+              GET_FOOD, GET_HUNT, GET_WOOD, GET_STONE]
 '''___________________________________________________________'''
 
 class SideMenu:
@@ -65,6 +70,21 @@ class SideMenu:
             'stone':'stone_button',
             'hunt': 'meat_button'
         }
+        self.weapon_image_for = {
+            'unarmed':      'unarmed_button',
+            'bone_knife':   'bone_knife_button',
+            'spear':        'spear_button',
+            'bone_spear':   'bone_spear_button',
+            'stone_spear':  'stone_spear_button',
+            'stone_axe':    'stone_axe_button'
+        }
+        self.armor_image_for = {
+            'undressed':     'undressed_button',
+            'light_leather': 'light_leather_button',
+            'medium_leather':'medium_leather_button',
+            'heavy_leather': 'heavy_leather_button',
+            'bone_armor':    'bone_armor_button'
+        }
         self.menu_line = [WINDOW_WIDTH - SIDE_PANEL_WIDTH + \
                                     LINE_WIDTH * 4, LINE_WIDTH * 4]
         self.block_topleft = [0,0]
@@ -79,6 +99,7 @@ class SideMenu:
 
         Blits whole side menu from the scratch
         '''
+        self.Tribe = self.Map.active_tribe
         self.buttons = []
         #Blits background image
         self.ScreenSurface.blit(self.Loader.controls['menu_background'],
@@ -101,6 +122,7 @@ class SideMenu:
             assert False, 'Incorrect menu mode'
 
         self.update = False
+        self.Map.update = False
 
         return None
 
@@ -136,9 +158,7 @@ class SideMenu:
 
         Blits tribe menu section
         '''
-        first_text_column = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
-        second_button_column = int(BUTTON_SIZE *2.5)
-        second_text_column = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
+
 
         self._prepare_menu()
 
@@ -147,42 +167,43 @@ class SideMenu:
 
         self._create_button('tribesman_button',PROCESS_MAN)
         self._blit_text('x ' + str(len(self.Tribe.population)),
-                        'header', first_text_column)
+                        'header', FIRST_TEXT_COLUMN)
+        self._create_button('heal_button',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
         self._next_line()
 
         self._blit_icon('meat_icon')
         self._blit_text('x ' + str(self.Tribe.get_resource('food')),
-                        'header', first_text_column)
+                        'header', FIRST_TEXT_COLUMN)
 
         self._create_button('stocked_button',PROCESS_FOOD,
-                            offset=second_button_column)
+                            offset=SECOND_BUTTON_COLUMN)
         self._blit_text('x ' + str(self.Tribe.get_resource('stocked_food')),
-                        'header', second_text_column)
+                        'header', SECOND_TEXT_COLUMN)
         self._next_line()
 
         self._blit_icon('bone_icon')
         self._blit_text('x ' + str(self.Tribe.get_resource('bones')),
-                        'header', first_text_column)
+                        'header', FIRST_TEXT_COLUMN)
         self._next_line()
 
         self._blit_icon('moist_skin_icon')
         self._blit_text('x ' + str(self.Tribe.get_resource('moist_skin')),
-                        'header', first_text_column)
+                        'header', FIRST_TEXT_COLUMN)
 
         self._create_button('skin_button',PROCESS_SKIN,
-                            offset=second_button_column)
+                            offset=SECOND_BUTTON_COLUMN)
         self._blit_text('x ' + str(self.Tribe.get_resource('skin')),
-                        'header', second_text_column)
+                        'header', SECOND_TEXT_COLUMN)
         self._next_line()
 
         self._blit_icon('wood_icon')
         self._blit_text('x ' + str(self.Tribe.get_resource('wood')),
-                        'header', first_text_column)
+                        'header', FIRST_TEXT_COLUMN)
         self._next_line()
 
         self._blit_icon('stone_icon')
         self._blit_text('x ' + str(self.Tribe.get_resource('stone')),
-                        'header', first_text_column)
+                        'header', FIRST_TEXT_COLUMN)
         self._next_line()
 
         self._compleate_menu()
@@ -227,6 +248,8 @@ class SideMenu:
         for tribesman in tribesmen_list:
             self._create_button('tribesman_button',command + str(counter))
             self._blit_text(tribesman.name, 'header',text_offset)
+            self._blit_health_points(tribesman)
+
             counter += 1
             self._next_line()
 
@@ -383,15 +406,47 @@ class SideMenu:
 
         return None
 
-    def _blit_richness(self, resource, offset= (0,0)):
+    def _blit_richness(self, resource, offset= 0):
         '''
         (str,(int,int)) -> None
-        Blits
+
+        Blits resource richness for selected land cell.
         '''
 
         return None
 
-    def mouseInput(self,position):
+    def _blit_health_points(self, tribesman, offset= 0):
+        '''
+        (tribesman) -> None
+
+        Blits tribesman health points.
+        '''
+        self._blit_icon('point_button',SECOND_BUTTON_COLUMN)
+        self._blit_text('x' + str(tribesman.points),'header',SECOND_TEXT_COLUMN)
+
+        return None
+
+    def _blit_weapon(self, tribesman, offset= 0):
+        '''
+        (tribesman) -> None
+
+        Blits tribesman weapon.
+        !!!In current implementation only as icon.
+        '''
+
+        return None
+
+    def _blit_armor(self, tribesman, offset= 0):
+        '''
+        (tribesman) -> None
+
+        Blits tribesman armor.
+        !!!In current implementation only as icon.
+        '''
+
+        return None
+
+    def mouseInput(self, position):
         '''
         (self, (int, int)) -> None
 
@@ -444,6 +499,8 @@ class SideMenu:
             print((x,y))
 
         return None
+
+
 
     def _party_builder_parser(self):
         '''

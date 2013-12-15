@@ -77,6 +77,50 @@ class Tribesman:
         
         return None
 
+    def suffer(self,damage = 1):
+        '''
+        (int) -> bool
+
+        Deals damage to tribesman. If damage is higher than current health
+        than set to 0 (it means that tribesman should die).
+        '''
+        if self.points > damage:
+            self.points -= damage
+        else:
+            self.points = 0
+
+        return None
+
+    def heal(self,amount = 1):
+        '''
+        (int) -> bool
+
+        Heals tribesman with passed points amount but not higher
+        than limit in 5 points.
+        '''
+        if self.points + amount >= 5:
+            self.points = 5
+        else:
+            self.points += amount
+
+        return None
+
+    def is_alive(self):
+        '''
+        (None) -> bool
+
+        Verifies is tribesman is dead.
+        True - alive
+        False- dead
+        '''
+        if self.points == 0:
+            return False
+        elif self.points > 0:
+            return True
+        else:
+            assert 0 <= self.points <= 5, \
+                'Incorrect number of health points'
+
     def _updateFrameIndex(self):
         # Note that this doesn't work if it's been more that self._delay
         # time between calls to update(); we only update the image once
@@ -89,19 +133,6 @@ class Tribesman:
 
         return None
                         
-    def __str__(self):
-        '''
-        (land_cell) -> str
-
-        Return clases content.
-
-        >>> cell = land_cell(1, 180, (1,1))
-        >>> print(cell)
-        
-        '''
-        return str(self.name)+" is at x="+str(self.cell[0])+", y="\
-               +str(self.cell[1])
-
     def blit(self, ScreenSurface):
         '''
         (Surface) -> NoneType
@@ -204,7 +235,19 @@ class Tribesman:
 
         return None
         
-        
+    def __str__(self):
+        '''
+        (land_cell) -> str
+
+        Return clases content.
+
+        >>> cell = land_cell(1, 180, (1,1))
+        >>> print(cell)
+
+        '''
+        return str(self.name)+" with "+str(self.points)+" points. Located at"\
+               +str(self.cell)
+
         
 
 

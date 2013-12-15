@@ -52,7 +52,7 @@ class Tribe:
         self.AI = ai.Ai(self)
         self.resources = {
             FOOD:        [0,0,0],
-            STOCKED_FOOD:[0,0,0,0,0,0],
+            STOCKED_FOOD:[0,0,0,0,0,0,0,0,0],
             HIDDEN_BONES:[0,0,0],
             BONES:       0,
             MOIST_SKIN:  [0,0,0],
@@ -259,6 +259,62 @@ class Tribe:
             self.resources[MOIST_SKIN][0] += amount // 4
         else:
             self.resources[type] += amount
+        return None
+
+    def consume_resource(self, type, amount):
+        '''
+        (str, int) -> None
+
+        Adds passed number to specified resource
+        '''
+        rest = amount
+        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONES):
+            consumable = self.resources[type]
+            for i in range(len(consumable)-1,-1,-1):
+                if consumable[i] == 0:
+                    continue
+                elif rest > consumable[i]:
+                    reduced = consumable[i]
+                else:
+                    reduced = rest
+                rest -= reduced
+                consumable[i] -= reduced
+        else:
+            if amount <= self.resources[type]:
+                self.resources[type] -= amount
+                rest = 0
+            else:
+                rest -= self.resources[type]
+                self.resources[type] = 0
+        return rest
+
+    def remove_dead(self):
+        '''
+        (None) -> None
+
+        Removes dead tribesmen from the population list.
+        !!Inventory retrieving from the corpse is not implemented.
+        '''
+        for man in self.population[:]:
+            if not man.is_alive():
+                self.population.remove(man)
+                print(self.name,'loses',man.name,'. Rest in peace brother.')
+
+        return None
+
+    def print_points(self):
+        '''
+        (None) -> None
+
+        Print out population points.
+        '''
+        total = 0
+        print('[',end='')
+        for man in self.population:
+            print(str(man.points),end=',')
+            total += man.points
+        print('] ='+ str(total))
+
         return None
 
     def __str__(self):

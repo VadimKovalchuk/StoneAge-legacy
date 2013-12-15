@@ -2,6 +2,7 @@
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import tools
+import random
 constants = tools.importConstants()
 '''___________________________________________________________'''
 #Land cell types
@@ -41,7 +42,7 @@ class Rules:
         self.resource_cost_matrix = {
             FIELD:   {'food':3, 'hunt':3, 'wood':0, 'stone':0},
             FOREST:  {'food':2, 'hunt':1, 'wood':4, 'stone':0},
-            MOUNTAIN:{'food':3, 'hunt':3, 'wood':0, 'stone':5},
+            MOUNTAIN:{'food':3, 'hunt':3, 'wood':0, 'stone':6},
             WATER:   {'food':0, 'hunt':1, 'wood':0, 'stone':0}
         }
 
@@ -62,13 +63,12 @@ class Rules:
         assert cost,'Error during resource gathering calculation'
         resource_amount = points // cost
 
-
         (x, y) = Party.destination_cell
         resource = Party.purpose[4:]
         self.Map.map[x][y].decrease_resource(resource, resource_amount)
         Party.loot = {resource:resource_amount}
 
-        print(Party.Tribe.name,resource_amount, resource)
+        print(Party.Tribe.name,'collected',resource_amount, resource)
 
         return None
 
@@ -151,8 +151,31 @@ class Rules:
         '''
         if 'food' in Party.purpose:
             amount = self._calculate_total_points(Party)
-            rest = self.reduce_food(Party.Tribe,amount)
+            rest = Party.Tribe.consume_resource(FOOD,amount)
             Party.Tribe.add_resource(STOCKED_FOOD,amount-rest)
+            print(Party.Tribe.name,'is stocking',str(amount-rest),'food')
+        elif 'man' in Party.purpose:
+            Tribe = Party.Tribe
+            man = Party.members[0]
+            woman=Party.members[1]
+            if len(Tribe.population) < 15:
+                if man.points == 5 and woman.points == 5:
+                    name = 'Kid'
+                    Tribe.add_tribesman(name)
+                    print(name,'was born at',Tribe.name)
+                else:
+                    print('Your population is not healthy enough to give a new life.')
+            else:
+                print('You have reached population limit.')
+        elif 'heal' in Party.purpose:
+            for man in Party.members:
+                man.heal()
+            print(str(len(Party.members))+ ' tribesmen were cured for 1 point each.')
+        if 'skin' in Party.purpose:
+            amount = self._calculate_total_points(Party) // 4
+            rest = Party.Tribe.consume_resource(MOIST_SKIN,amount)
+            Party.Tribe.add_resource(SKIN,amount-rest)
+            print(Party.Tribe.name,' dressed ',str(amount-rest),' peaces of skin.')
 
         return None
 
@@ -165,13 +188,21 @@ class Rules:
         If tribesmen point amount is 0 - he dies.
         '''
         feed = len(Tribe.population)
+        print(Tribe.name + ' requires '+ str(feed) + ' food.')
         feed = self.reduce_food(Tribe,feed)
         if feed == 0:
             return None
+        print('Available food was not enough and '+ str(feed) +
+              ' stocked food is required.')
         feed = self.reduce_stocked_food(Tribe,feed)
         if feed == 0:
             return None
-        self._starving_tribe(Tribe)
+        print(Tribe.name + ' suffers starvation. Deficit is '+
+              str(feed) + ' food.')
+        Tribe.print_points()
+        self.population_damage(Tribe.population,feed)
+        Tribe.print_points()
+        Tribe.remove_dead()
 
         return None
 
@@ -242,8 +273,44 @@ class Rules:
 
         return 0
 
-    def _starving_tribe(self,Tribe):
-        pass
+    def population_damage(self,tribesmen_list,amount):
+        '''
+        (list of tribesmen, int) -> None
+
+        Deals damage to list of tribesmen randomly. If amount is higher
+        than number of tribesmen than deal damage to all and calls itself
+        again with remained damage amount. When tribesmen points is 0 he dies.
+        WARNING: No validation for losing conditions are performed.
+        '''
+        alive = 0
+        total_points = 0
+        for man in tribesmen_list:
+            if man.is_alive():
+                alive += 1
+                total_points += man.points
+        if alive == 0:
+            return None
+        if amount > total_points:
+            amount = total_points
+        if alive > amount:
+            suffered = []
+            while amount > 0:
+                lucky =  random.randint(0,len(tribesmen_list)-1)
+                if lucky in suffered:
+                    continue
+                else:
+                    if tribesmen_list[lucky].is_alive():
+                        tribesmen_list[lucky].suffer()
+                        amount -= 1
+                        suffered.append(lucky)
+                    else:
+                        suffered.append(lucky)
+        else:
+            amount -= alive
+            for man in tribesmen_list:
+                if man.is_alive():
+                    man.suffer(1)
+            self.population_damage(tribesmen_list,amount)
 
         return None
 
@@ -259,6 +326,8 @@ class Rules:
             Tribe.resources[res][0] = 0
 
         return None
+
+
 
 
 
