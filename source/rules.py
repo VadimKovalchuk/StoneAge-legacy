@@ -30,14 +30,14 @@ del constants
 '''___________________________________________________________'''
 
 class Rules:
-    """Helper class for Map that calculates results of any action
+    """Helper class for Core that calculates results of any action
     according to game rules """
 
-    def __init__(self, Map):
+    def __init__(self, Core):
         '''
-        (Map) -> NoneType
+        (Core) -> None
         '''
-        self.Map = Map
+        self.Core = Core
 
         self.resource_cost_matrix = {
             FIELD:   {'food':3, 'hunt':3, 'wood':0, 'stone':0},
@@ -65,7 +65,7 @@ class Rules:
 
         (x, y) = Party.destination_cell
         resource = Party.purpose[4:]
-        self.Map.map[x][y].decrease_resource(resource, resource_amount)
+        self.Core.map[x][y].decrease_resource(resource, resource_amount)
         Party.loot = {resource:resource_amount}
 
         print(Party.Tribe.name,'collected',resource_amount, resource)
@@ -101,7 +101,7 @@ class Rules:
         '''
         (x, y) = Party.destination_cell
         resource = Party.purpose[4:]
-        richness = self.Map.map[x][y].richness(resource)
+        richness = self.Core.map[x][y].richness(resource)
         if richness == RICH:
             return 0
         elif richness == MANY:
@@ -138,7 +138,7 @@ class Rules:
         '''
         (x, y) = Party.destination_cell
         resource = Party.purpose[4:]
-        cell_type = self.Map.map[x][y].land_type
+        cell_type = self.Core.map[x][y].land_type
         cost = self.resource_cost_matrix[cell_type][resource]
 
         return cost
@@ -153,7 +153,9 @@ class Rules:
             amount = self._calculate_total_points(Party)
             rest = Party.Tribe.consume_resource(FOOD,amount)
             Party.Tribe.add_resource(STOCKED_FOOD,amount-rest)
-            print(Party.Tribe.name,'is stocking',str(amount-rest),'food')
+            log_str = str(amount-rest) + ' food is stocked.'
+            print(log_str)
+            #self._log(log_str)
         elif 'man' in Party.purpose:
             Tribe = Party.Tribe
             man = Party.members[0]

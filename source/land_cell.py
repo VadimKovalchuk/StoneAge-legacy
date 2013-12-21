@@ -101,13 +101,42 @@ class LandCell:
 
         return None
 
+    def regenerate(self, resource = None, amount = None):
+        '''
+        (None) -> None
+
+        Regenerates specified resource(in case of custom event) or all
+        resources on daily basis.
+        '''
+        if resource:
+            pass
+        else:
+            if self.land_type == FIELD:
+                res_list = ('food', 'hunt')
+            elif self.land_type == FOREST:
+                res_list = ('food', 'hunt', 'wood')
+            elif self.land_type == MOUNTAIN:
+                res_list = ('food', 'hunt', 'stone')
+            elif self.land_type == WATER:
+                res_list = ('hunt',)
+            else:
+                return None
+            for resource in res_list:
+                if self.resources[resource] == self.resource_limit[resource]:
+                    continue
+                else:
+                    self.resources[resource] += 1
+
+        return None
+
     def richness(self,resource):
         '''
         (str) -> str
 
         Calculates and returns richness of passed resource type
         '''
-        if self.resources[resource] == 0:
+        if self.resources[resource] <= 0:
+            self.resources[resource] = 0
             return EMPTY
         margin = self.resources[resource]/self.resource_limit[resource]
         if margin > 0.8:

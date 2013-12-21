@@ -24,7 +24,7 @@ del constants
 class Tribe:
     """ Tribe class """
 
-    def __init__(self, name, Loader, Map, LandCell,  player = 'CPU'):
+    def __init__(self, name, Loader, Core, LandCell,  player = 'CPU'):
         '''
         (land_cell, str, (int, int), str, str, custom) -> NoneType
 
@@ -40,12 +40,13 @@ class Tribe:
         '''
 
         self.name = name
-        self.Map = Map
+        self.Core = Core
         self.home_cell = LandCell
         self.population = []
         self.parties = []
         self.send_query = []
         self.ready = False
+        self.popup = None
         self.query_timer = pygame.time.get_ticks()
         self.meeple_sprite = Loader.sprites['player_walk']
         self.player_type = player
@@ -115,9 +116,9 @@ class Tribe:
 
         for group in self.parties:
             if 'get' in group.purpose:
-                self.Map.Rules.resource_gathering(group)
+                self.Core.Rules.resource_gathering(group)
             elif 'process' in group.purpose:
-                self.Map.Rules.tribe_activities(group)
+                self.Core.Rules.tribe_activities(group)
             elif 'quest' in group.purpose:
                 #Not implemented
                 pass
@@ -136,8 +137,9 @@ class Tribe:
         if self.ready == True:
             return None
         self._loot_transfer()
-        self.Map.Rules.feeding(self)
-        self.Map.Rules.repository_maintenance(self)
+        self.Core.Rules.feeding(self)
+        self.Core.Rules.repository_maintenance(self)
+        self.parties = []
 
         self.ready = True
 
@@ -182,7 +184,7 @@ class Tribe:
                 else:
                     start = self.home_cell.cell
                     end = group.destination_cell
-                waypoint = self.Map.PathFinder.get_path(start, end)
+                waypoint = self.Core.PathFinder.get_path(start, end)
                 party_member.travel(waypoint)
 
         for n in range(0,len(self.send_query)-1):
@@ -209,7 +211,7 @@ class Tribe:
         if time - self.query_timer > SEND_INTERVAL:
             self.query_timer = time
             if len(self.send_query) > 0:
-                self.Map.active_sprites.append(self.send_query[0])
+                self.Core.active_sprites.append(self.send_query[0])
                 self.send_query.pop(0)
                 return None
 

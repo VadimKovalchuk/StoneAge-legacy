@@ -5,7 +5,7 @@ from pygame.locals import *
 
 #CONSTANTS
 #Uplading constants from setup.ini file
-from source import mapprocessing, controls, scenario, loader, tools
+from source import core, controls, scenario, loader, tools
 
 constants = tools.importConstants()
 '___________________________________________________________'
@@ -38,18 +38,18 @@ def main():
     #Defining event set and story line
     Scenario = scenario.Scenario('free.scn')
     #Building map
-    Map = mapprocessing.Map(ScreenSurface, Scenario, Loader)
+    Core = core.Core(ScreenSurface, Scenario, Loader)
     #Defining side menu
-    SideMenu = controls.SideMenu(ScreenSurface,Map, Loader)
+    Controls = controls.Controls(ScreenSurface, Core, Loader)
     #Drawing clear landscape
-    Map.blit_map()
+    Core.blit_map()
     '_________________________________________________________________'
     'PATH FINDER SANDBOX'
 
-    #Map.PathFinder.get_path((1,1),(2,3))
-    #Map.PathFinder.get_path((1,1),(4,0))
-    #Map.PathFinder.get_path((2,1),(2,3))
-    #print(Map.PathFinder.path_collection)
+    #Core.PathFinder.get_path((1,1),(2,3))
+    #Core.PathFinder.get_path((1,1),(4,0))
+    #Core.PathFinder.get_path((2,1),(2,3))
+    #print(Core.PathFinder.path_collection)
 
     def gloryCircle(Tribesman):
         Tribesman.setLocation((3,0))
@@ -66,7 +66,7 @@ def main():
 
     tribe_name = ['Gabonga','CPU1','CPU2','CPU3']
     count = 0
-    for Tribe in Map.tribes:
+    for Tribe in Core.tribes:
         Tribe.add_tribesman("Oku")
         Tribe.add_tribesman("Buba")
         Tribe.add_tribesman("Cora")
@@ -100,21 +100,22 @@ def main():
                 sys.exit()
 
             elif event.type == MOUSEBUTTONUP:
-                SideMenu.mouseInput(pygame.mouse.get_pos())
+                Controls.mouseInput(pygame.mouse.get_pos())
 
         #Performing game flow and changing game state
-        Map.flow()
+        Core.flow()
 
         # Restoring empty Landscape without animated sprites
-        Map.clear_map()
+        Core.clear_map()
 
         # Calculating changes in sprite frames
-        Map.process_sprites()
+        if not Controls.pause:
+            Core.process_sprites()
 
-        #Drawing new sprites. Side menu update if nescesary
-        Map.blit_sprites()
-        if SideMenu.update or Map.update:
-            SideMenu.blit_all()
+        #Drawing new sprites. Controls update if nescesary
+        Core.blit_sprites()
+        if Controls.update or Core.update:
+            Controls.blit_all()
 
         #UPDATING SCREEN
         pygame.display.update()

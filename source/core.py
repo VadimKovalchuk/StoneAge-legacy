@@ -19,7 +19,7 @@ RETURN = 3
 EVENING = 4
 '''___________________________________________________________'''
 
-class Map:
+class Core:
     """ Map class contains game logic with landscape structure, tribe
     location, movement and interaction of lend cells and tribesmen inside
     the parties """
@@ -37,14 +37,15 @@ class Map:
         self.Loader = Loader
         self.map = []
         self.active_sprites = []
-        self.upper_layer_arts = []
         self.tribes = []
         self.active_tribe = None
         self.PathFinder = None
+        self.Rules = rules.Rules(self)
         self.game_mode = 'regular'
         self.game_phase = 0
         self.move_counter = 0
         self.update = False
+        self.popup = None
 
         # Building starting map from map line
         for x in range(0,LAND_NUM_X):
@@ -70,8 +71,8 @@ class Map:
 
         assert len(self.tribes), 'No tribes found at map'
         self.active_tribe = self.tribes[0]
+
         self.PathFinder = path_finder.PathFinder(self.map)
-        self.Rules = rules.Rules(self)
 
         return None
 
@@ -94,6 +95,19 @@ class Map:
         '''
         for obj in self.active_sprites:
             self.ScreenSurface.blit(self.ClearLandscape, obj.Rect, obj.Rect)
+
+        return None
+
+    def environment_update(self):
+        '''
+        (None) -> None
+
+        Activities that should be performed in the end of the day or night.
+        '''
+        # Resource regeneration
+        for x in range(0,LAND_NUM_X):
+            for y in range(0,LAND_NUM_Y):
+                self.map[x][y].regenerate()
 
         return None
 
@@ -151,23 +165,51 @@ class Map:
                     tribe.send_parties()
                 elif self.game_phase == EVENING:
                     tribe.everning()
-                    tribe.parties = []
-                    tribe.ready = True
                 all_done_flag = False
         if all_done_flag:
-            if self.game_phase == 4:
-                self.move_counter += 1
-                print('Move #',self.move_counter,'is over.')
-            self.game_phase += 1
-            if self.game_phase > 4:
-                self.game_phase = 0
-            print('Game phase:',self.game_phase)
-            self.update = True
-            for tribe in self.tribes:
-                tribe.ready = False
+            self._next_game_phase()
+
+
 
         return None
 
+    def _next_game_phase(self):
+        '''
+        (None) -> None
+
+        Sets next game phase. When last phase is reached - sets firs one.
+        '''
+        if self.game_phase == 4:
+            #Turn is over
+            self.environment_update()
+            self.move_counter += 1
+            print('Move #',self.move_counter,'is over.')
+        self.game_phase += 1
+        if self.game_phase > 4:
+            self.game_phase = 0
+        print('Game phase:',self.game_phase)
+        self.update = True
+        for tribe in self.tribes:
+            tribe.ready = False
+
+        return None
+
+    def check_popups(self):
+        '''
+        (None) -> bool
+
+        Checks if popup is required to be displayed by Core or any tribe.
+        '''
+
+        if self.popup:
+            self.update = True
+            return True
+        for tribe in self.tribes:
+            if tribe.popup:
+                self.update = True
+                return True
+
+        return None
     
 
 

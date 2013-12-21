@@ -46,7 +46,7 @@ class Ai:
         '''
         for cell_coord in self.coord_list:
             (x,y) = cell_coord
-            if self.Tribe.Map.map[x][y].get_resource('food') > 0:
+            if self.Tribe.Core.map[x][y].get_resource('food') > 0:
                 free_list = self.Tribe.get_free_tribesmen()
                 if len(free_list) == 0:
                     break

@@ -15,6 +15,13 @@ FIELD_WIDTH = constants['FIELD_WIDTH']          #Calculated
 #Used colors
 BROWN           = constants['BROWN']            #Optional
 ORANGE          = constants['ORANGE']           #Optional
+#Resource richness in land cell
+EMPTY = constants['EMPTY']      #Default is 'empty'
+LOW = constants['LOW']          #Default is 'low'
+MODERATE = constants['MODERATE']#Default is 'moderate'
+MANY = constants['MANY']        #Default is 'many'
+RICH = constants['RICH']        #Default is 'rich'
+
 del constants
 
 BUTTON_SIZE = 35
@@ -38,11 +45,11 @@ FORM_PARTY = [PROCESS_MAN, PROCESS_FOOD, PROCESS_SKIN,PROCESS_HEAL,
               GET_FOOD, GET_HUNT, GET_WOOD, GET_STONE]
 '''___________________________________________________________'''
 
-class SideMenu:
-    """ Side menu handles pygame input events. Performs task asignment
+class Controls:
+    """ Controls handles pygame input events. Performs task asignment
        for map and tribe for next move """
 
-    def __init__(self, ScreenSurface, Map, Loader):
+    def __init__(self, ScreenSurface, Core, Loader):
         '''
         (self, Surface, Map) -> NoneType
 
@@ -50,9 +57,10 @@ class SideMenu:
 
         self.ScreenSurface = ScreenSurface
         self.Loader = Loader
-        self.Map = Map
-        self.Tribe = Map.active_tribe
-        self.selected = self.Map.map[0][0]
+        self.Core = Core
+        self.Tribe = Core.active_tribe
+        self.selected = self.Core.map[0][0]
+        self.pause = False
         self.update = True
         self.buttons = []
         self.menu_mode = 'general'
@@ -64,6 +72,13 @@ class SideMenu:
         #Internal variables
         self.HeaderText = pygame.font.SysFont(None, 24)
         self.RegularText = pygame.font.SysFont(None, 20)
+        self.richness_image_for = {
+            EMPTY:   'red_circle_icon',
+            LOW:     'red_circle_icon',
+            MODERATE:'yellow_circle_icon',
+            MANY:    'green_circle_icon',
+            RICH:    'blue_circle_icon'
+        }
         self.cell_image_for = {
             'food': 'apple_button',
             'wood': 'wood_button',
@@ -99,9 +114,37 @@ class SideMenu:
 
         Blits whole side menu from the scratch
         '''
-        self.Tribe = self.Map.active_tribe
+        self.Tribe = self.Core.active_tribe
         self.buttons = []
-        #Blits background image
+        self._blit_background()
+        #Verification for required popup display
+        if self.menu_mode == 'general' and self.Core.check_popups():
+            self.menu_mode = 'popup'
+
+        #Blits menu components
+        if self.menu_mode == 'general':
+            self._blit_cell_menu()
+            self._blit_tribe_menu()
+        elif self.menu_mode == 'party_builder':
+            self._party_builder_parser()
+            self._party_builder_menu()
+        elif self.menu_mode == 'popup':
+            pass
+        else:
+            assert False, 'Incorrect menu mode'
+
+        self.update = False
+        self.Core.update = False
+
+        return None
+
+    def _blit_background(self):
+        '''
+        (None) -> none
+
+        Blits background image adn frame around it.
+        '''
+
         self.ScreenSurface.blit(self.Loader.controls['menu_background'],
                                 ((WINDOW_WIDTH - SIDE_PANEL_WIDTH,0),
                                  (SIDE_PANEL_WIDTH,WINDOW_HEIGHT)))
@@ -111,18 +154,6 @@ class SideMenu:
 
         self.menu_line = [WINDOW_WIDTH - SIDE_PANEL_WIDTH +\
                                  LINE_WIDTH * 2, LINE_WIDTH * 2]
-        #Blits menu components
-        if self.menu_mode == 'general':
-            self._blit_cell_menu()
-            self._blit_tribe_menu()
-        elif self.menu_mode == 'party_builder':
-            self._party_builder_parser()
-            self._party_builder_menu()
-        else:
-            assert False, 'Incorrect menu mode'
-
-        self.update = False
-        self.Map.update = False
 
         return None
 
@@ -137,12 +168,25 @@ class SideMenu:
         self._blit_text(self.selected.land_type.capitalize(), 'header')
         self._next_line(self.HeaderText.get_height())
 
-        if self.Map.PathFinder.get_path(self.Tribe.home_cell.cell,self.selected.cell):
+        if self.Core.PathFinder.get_path(self.Tribe.home_cell.cell,self.selected.cell):
             # Creates and blits button for each resource that higher than 0
             for resource in self.selected.resources:
                 if self.selected.resources[resource] == 0:
                     continue
+                # Blits button which creates the party for specific resource
                 self._create_button(self.cell_image_for[resource],'get_' + resource)
+
+                # Blits resource richness
+                richness = self.selected.richness(resource)
+                self._blit_icon(self.richness_image_for[richness],FIRST_TEXT_COLUMN[0])
+
+                #Blits resource cost
+                cost_table = self.Core.Rules.resource_cost_matrix
+                land_type = self.selected.land_type
+                cost = cost_table[land_type][resource]
+                self._blit_icon('point_icon',SECOND_BUTTON_COLUMN)
+                self._blit_text('x '+str(cost),'header',SECOND_TEXT_COLUMN)
+
                 self._next_line()
         else:
             self._blit_text('Location is not reachable', 'regular')
@@ -415,13 +459,13 @@ class SideMenu:
 
         return None
 
-    def _blit_health_points(self, tribesman, offset= 0):
+    def _blit_health_points(self, tribesman):
         '''
         (tribesman) -> None
 
         Blits tribesman health points.
         '''
-        self._blit_icon('point_button',SECOND_BUTTON_COLUMN)
+        self._blit_icon('point_icon',SECOND_BUTTON_COLUMN)
         self._blit_text('x' + str(tribesman.points),'header',SECOND_TEXT_COLUMN)
 
         return None
@@ -494,7 +538,7 @@ class SideMenu:
 
         else:
             (x,y) = tools.pxToCellCoordinate(position)
-            self.selected = self.Map.map[x][y]
+            self.selected = self.Core.map[x][y]
             self.update = True
             print((x,y))
 
