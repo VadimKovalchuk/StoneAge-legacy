@@ -1,6 +1,9 @@
-from source import tools, land_cell, tribe
+from source import tools
+from source import land_cell
+from source import tribe
 from source import path_finder
 from source import rules
+from source import logger
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -40,6 +43,7 @@ class Core:
         self.tribes = []
         self.active_tribe = None
         self.PathFinder = None
+        self.Logger = logger.Logger()
         self.Rules = rules.Rules(self)
         self.game_mode = 'regular'
         self.game_phase = 0

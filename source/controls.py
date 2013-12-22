@@ -119,7 +119,8 @@ class Controls:
         self._blit_background()
         #Verification for required popup display
         if self.menu_mode == 'general' and self.Core.check_popups():
-            self.menu_mode = 'popup'
+            pass
+            #self.menu_mode = 'popup'
 
         #Blits menu components
         if self.menu_mode == 'general':

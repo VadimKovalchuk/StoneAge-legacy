@@ -115,6 +115,18 @@ class Party:
 
         return None
 
+    def output(self, entrie):
+        '''
+        (str) -> None
+
+        Adds entry to next popup message.
+        '''
+
+        self.Tribe.popup.append(entrie)
+        self.Tribe._log(entrie)
+
+        return None
+
     def __str__(self):
         '''
         Returns following information about the party:

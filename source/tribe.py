@@ -46,7 +46,7 @@ class Tribe:
         self.parties = []
         self.send_query = []
         self.ready = False
-        self.popup = None
+        self.popup = []
         self.query_timer = pygame.time.get_ticks()
         self.meeple_sprite = Loader.sprites['player_walk']
         self.player_type = player
@@ -113,7 +113,7 @@ class Tribe:
         '''
         if self.ready == True:
             return None
-
+        self._log(self.name + ':')
         for group in self.parties:
             if 'get' in group.purpose:
                 self.Core.Rules.resource_gathering(group)
@@ -136,6 +136,7 @@ class Tribe:
         '''
         if self.ready == True:
             return None
+        self._log(self.name + ':')
         self._loot_transfer()
         self.Core.Rules.feeding(self)
         self.Core.Rules.repository_maintenance(self)
@@ -216,7 +217,8 @@ class Tribe:
                 return None
 
             if self._all_reached():
-                    print('All tribesmen from',self.name,'has reached their locations.')
+                    self._log('All tribesmen from '+ self.name +
+                              ' has reached their locations.')
                     self.ready = True
         return None
 
@@ -300,7 +302,7 @@ class Tribe:
         for man in self.population[:]:
             if not man.is_alive():
                 self.population.remove(man)
-                print(self.name,'loses',man.name,'. Rest in peace brother.')
+                self._log(man.name + ' has died.')
 
         return None
 
@@ -311,11 +313,34 @@ class Tribe:
         Print out population points.
         '''
         total = 0
-        print('[',end='')
+        log_str = '['
         for man in self.population:
-            print(str(man.points),end=',')
+            log_str += str(man.points) + ','
             total += man.points
-        print('] ='+ str(total))
+        log_str += '] = '+ str(total)
+        self._log(log_str)
+
+        return None
+
+    def output(self, entrie):
+        '''
+        (str) -> None
+
+        Adds entry to next popup message.
+        '''
+
+        self.popup.append(entrie)
+        self._log(entrie)
+
+        return None
+
+    def _log(self, line, console = True, log = True):
+        '''
+        (str, bool, bool) -> None
+
+        Passes entry to log
+        '''
+        self.Core.Logger.append(line,console,log)
 
         return None
 

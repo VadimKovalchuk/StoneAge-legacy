@@ -96,6 +96,7 @@ def main():
 
         for event in pygame.event.get():
             if event.type == QUIT:
+                Core.Logger.finalize()
                 pygame.quit()
                 sys.exit()
 
