@@ -85,12 +85,12 @@ class Party:
             - only 1 party of each type is allowed
         '''
         if self.limits['min'] > len(self.members):
-            return 'Select participants'
+            return 1001         #'Select participants'
         if len(self.members) > self.limits['max']:
-            return 'To many participants'
+            return 1002         #'To many participants'
         for Party in Tribe.parties:
             if Party.purpose == self.purpose:
-                return 'only 1 activity allowed'
+                return 1003     #'only 1 activity allowed'
 
         return None
 
@@ -112,18 +112,6 @@ class Party:
         else:
             assert False, 'incorrect party command syntax'+ str(self.purpose)
 
-
-        return None
-
-    def output(self, entrie):
-        '''
-        (str) -> None
-
-        Adds entry to next popup message.
-        '''
-
-        self.Tribe.popup.append(entrie)
-        self.Tribe._log(entrie)
 
         return None
 

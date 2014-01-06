@@ -49,7 +49,8 @@ class Core:
         self.game_phase = 0
         self.move_counter = 0
         self.update = False
-        self.popup = None
+        self.popup = {}
+        self.raise_popup = False
 
         # Building starting map from map line
         for x in range(0,LAND_NUM_X):
@@ -205,11 +206,11 @@ class Core:
         Checks if popup is required to be displayed by Core or any tribe.
         '''
 
-        if self.popup:
+        if self.popup and self.raise_popup:
             self.update = True
             return True
         for tribe in self.tribes:
-            if tribe.popup:
+            if tribe.popup and tribe.raise_popup:
                 self.update = True
                 return True
 

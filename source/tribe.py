@@ -46,7 +46,8 @@ class Tribe:
         self.parties = []
         self.send_query = []
         self.ready = False
-        self.popup = []
+        self.popup = {}
+        self.raise_popup = False
         self.query_timer = pygame.time.get_ticks()
         self.meeple_sprite = Loader.sprites['player_walk']
         self.player_type = player
@@ -125,7 +126,7 @@ class Tribe:
             else:
                 assert False, 'incorrect party command syntax'+ str(self.purpose)
         self.ready = True
-
+        self._finalize_popup('daily')
         return None
 
     def everning(self):
@@ -143,7 +144,7 @@ class Tribe:
         self.parties = []
 
         self.ready = True
-
+        self._finalize_popup('nightly')
         return None
 
     def _loot_transfer(self):
@@ -207,7 +208,6 @@ class Tribe:
         '''
         if self.ready:
             return None
-
         time = pygame.time.get_ticks()
         if time - self.query_timer > SEND_INTERVAL:
             self.query_timer = time
@@ -302,6 +302,7 @@ class Tribe:
         for man in self.population[:]:
             if not man.is_alive():
                 self.population.remove(man)
+                self.add_to_popup('dead', man.name)
                 self._log(man.name + ' has died.')
 
         return None
@@ -322,18 +323,6 @@ class Tribe:
 
         return None
 
-    def output(self, entrie):
-        '''
-        (str) -> None
-
-        Adds entry to next popup message.
-        '''
-
-        self.popup.append(entrie)
-        self._log(entrie)
-
-        return None
-
     def _log(self, line, console = True, log = True):
         '''
         (str, bool, bool) -> None
@@ -342,6 +331,32 @@ class Tribe:
         '''
         self.Core.Logger.append(line,console,log)
 
+        return None
+
+    def add_to_popup(self, category, message):
+        '''
+        (str, str) -> None
+
+        Appends message to passed category. If category is not exist - creates it.
+        '''
+        if category not in self.popup:
+            self.popup[category] =[]
+        self.popup[category].append(message)
+
+        return None
+
+    def _finalize_popup(self, type):
+        '''
+        (str) -> None
+
+        Adds mandatory information into popup dictionary and raises flag
+        for popup display.
+        '''
+        if self.player_type == 'player':
+            self.add_to_popup('type', type)
+            self.raise_popup = True
+        else:
+            self.popup = {}
         return None
 
     def __str__(self):

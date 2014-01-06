@@ -1,0 +1,26 @@
+1:field
+2:forest
+3:mountain
+4:water
+5:camp
+6:food
+7:stocked food
+8:moist skin
+9:skin
+10:wood
+11:stone
+12:wildfowl
+1001:Select participants
+1002:Too many participants
+1003:Only 1 activity allowed
+1101:Collected 
+1201:Population is not healthy enough to give a new life
+1202:Population limit is reached
+1203:Available food amount is not enough
+1204:Food stock is empty and your people suffer from hunger
+1301: food are stocked
+1302: was born
+1303: got rest and healed
+1304: peaces of skin are dressed
+1305: food are required for feeding
+1306: stocked food are required

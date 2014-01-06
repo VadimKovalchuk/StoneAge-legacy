@@ -16,10 +16,14 @@ class Logger:
         #Defining log file name for current session
         files = glob.glob(LOG_DIR + '*')
         if len(files):
-            last_index = int(files[-1][len(LOG_DIR):-4])
-            file_name = LOG_DIR + str(last_index + 1) + '.txt'
+            index = int(max(files)[len(LOG_DIR):-4]) +1
+            if index < 10:
+                index = '0' + str(index)
+            else:
+                index = str(index)
+            file_name = LOG_DIR + index + '.txt'
         else:
-            file_name = LOG_DIR + '1.txt'
+            file_name = LOG_DIR + '01.txt'
 
         #Creatin log file
         self.log_file = open(file_name, 'w')

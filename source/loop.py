@@ -103,20 +103,22 @@ def main():
             elif event.type == MOUSEBUTTONUP:
                 Controls.mouseInput(pygame.mouse.get_pos())
 
+        if not Controls.pause:
         #Performing game flow and changing game state
-        Core.flow()
+            Core.flow()
 
         # Restoring empty Landscape without animated sprites
-        Core.clear_map()
+
+            Core.clear_map()
 
         # Calculating changes in sprite frames
-        if not Controls.pause:
             Core.process_sprites()
 
-        #Drawing new sprites. Controls update if nescesary
-        Core.blit_sprites()
-        if Controls.update or Core.update:
-            Controls.blit_all()
+        #Drawing new sprites
+            Core.blit_sprites()
+
+        #Updates controls
+        Controls.refresh()
 
         #UPDATING SCREEN
         pygame.display.update()
