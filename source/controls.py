@@ -48,6 +48,7 @@ POPUP_RECT = ((FIELD_WIDTH // 4,WINDOW_HEIGHT // 4),
               (FIELD_WIDTH // 2, WINDOW_HEIGHT //2))
 POPUP_PIC =  ((POPUP_RECT[0][0] + 40, POPUP_RECT[0][1] + 20),
                (150,320))
+POPUP_TXT_INDENT = (200,40)
 '''___________________________________________________________'''
 
 class Controls:
@@ -80,17 +81,17 @@ class Controls:
         self.HeaderText = pygame.font.SysFont(None, 24)
         self.RegularText = pygame.font.SysFont(None, 20)
         self.richness_image_for = {
-            EMPTY:   'red_circle_icon',
-            LOW:     'red_circle_icon',
-            MODERATE:'yellow_circle_icon',
-            MANY:    'green_circle_icon',
-            RICH:    'blue_circle_icon'
+            EMPTY:   'red_circle',
+            LOW:     'red_circle',
+            MODERATE:'yellow_circle',
+            MANY:    'green_circle',
+            RICH:    'blue_circle'
         }
         self.cell_image_for = {
-            'food': 'apple_button',
-            'wood': 'wood_button',
-            'stone':'stone_button',
-            'hunt': 'meat_button'
+            'food': 'apple',
+            'wood': 'wood',
+            'stone':'stone',
+            'hunt': 'meat'
         }
         self.weapon_image_for = {
             'unarmed':      'unarmed_button',
@@ -159,7 +160,7 @@ class Controls:
         Blits background image adn frame around it.
         '''
 
-        self.ScreenSurface.blit(self.Loader.controls['menu_background'],
+        self.ScreenSurface.blit(self.Loader.get('background','menu'),
                                 ((WINDOW_WIDTH - SIDE_PANEL_WIDTH,0),
                                  (SIDE_PANEL_WIDTH,WINDOW_HEIGHT)))
         #Blits frame around side menu edge
@@ -205,7 +206,7 @@ class Controls:
                 if self.selected.resources[resource] == 0:
                     continue
                 # Blits button which creates the party for specific resource
-                self._create_button(self.cell_image_for[resource],'get_' + resource)
+                self._blit_button(self.cell_image_for[resource],'get_' + resource)
 
                 # Blits resource richness
                 richness = self.selected.richness(resource)
@@ -215,7 +216,7 @@ class Controls:
                 cost_table = self.Core.Rules.resource_cost_matrix
                 land_type = self.selected.land_type
                 cost = cost_table[land_type][resource]
-                self._blit_icon('point_icon',SECOND_BUTTON_COLUMN)
+                self._blit_icon('point',SECOND_BUTTON_COLUMN)
                 self._blit_text('x '+str(cost),'header',SECOND_TEXT_COLUMN)
 
                 self._next_line()
@@ -240,43 +241,43 @@ class Controls:
         self._blit_text(self.Tribe.name, 'header')
         self._next_line(self.HeaderText.get_height())
 
-        self._create_button('tribesman_button',PROCESS_MAN)
+        self._blit_button('tribesman',PROCESS_MAN)
         self._blit_text('x ' + str(len(self.Tribe.population)),
                         'header', FIRST_TEXT_COLUMN)
-        self._create_button('heal_button',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
+        self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
         self._next_line()
 
-        self._blit_icon('meat_icon')
+        self._blit_icon('meat')
         self._blit_text('x ' + str(self.Tribe.get_resource('food')),
                         'header', FIRST_TEXT_COLUMN)
 
-        self._create_button('stocked_button',PROCESS_FOOD,
+        self._blit_button('stocked',PROCESS_FOOD,
                             offset=SECOND_BUTTON_COLUMN)
         self._blit_text('x ' + str(self.Tribe.get_resource('stocked_food')),
                         'header', SECOND_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('bone_icon')
+        self._blit_icon('bone')
         self._blit_text('x ' + str(self.Tribe.get_resource('bones')),
                         'header', FIRST_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('moist_skin_icon')
+        self._blit_icon('moist_skin')
         self._blit_text('x ' + str(self.Tribe.get_resource('moist_skin')),
                         'header', FIRST_TEXT_COLUMN)
 
-        self._create_button('skin_button',PROCESS_SKIN,
+        self._blit_button('skin',PROCESS_SKIN,
                             offset=SECOND_BUTTON_COLUMN)
         self._blit_text('x ' + str(self.Tribe.get_resource('skin')),
                         'header', SECOND_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('wood_icon')
+        self._blit_icon('wood')
         self._blit_text('x ' + str(self.Tribe.get_resource('wood')),
                         'header', FIRST_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('stone_icon')
+        self._blit_icon('stone')
         self._blit_text('x ' + str(self.Tribe.get_resource('stone')),
                         'header', FIRST_TEXT_COLUMN)
         self._next_line()
@@ -315,45 +316,43 @@ class Controls:
 
             return None
 
+        def _blit_tribesmen_list(tribesmen_list, command):
+            '''
+            (list) -> None
+
+            Blits list of tribesmen for _party_builder_menu
+            '''
+            text_offset = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
+            counter = 0
+            for tribesman in tribesmen_list:
+                self._blit_button('tribesman',command + str(counter))
+                self._blit_text(tribesman.name, 'header',text_offset)
+                self._blit_health_points(tribesman)
+
+                counter += 1
+                self._next_line()
+            return None
+
         _party_builder_parser()
         self._prepare_menu()
 
         valid_party = self.Party.is_valid(self.Tribe)
-        if valid_party is not None:
+        if valid_party:
             output_text = self.Txt.get_txt('controls', valid_party)
             self._blit_text(output_text, 'regular')
             self._next_line(self.HeaderText.get_height())
 
-        self._blit_tribesmen_list(self.party_list,'remove_from_party_')
+        _blit_tribesmen_list(self.party_list,'remove_from_party_')
         self._blit_delimiter()
-        self._blit_tribesmen_list(self.free_list,'add_to_party_')
+        _blit_tribesmen_list(self.free_list,'add_to_party_')
 
         self._blit_delimiter()
-        self._create_button('yes_button', YES)
+        self._blit_button('yes', YES)
         offset = SIDE_PANEL_WIDTH - BUTTON_SIZE - LINE_WIDTH * 8
-        self._create_button('no_button', NO, offset)
+        self._blit_button('no', NO, offset)
         self._next_line()
 
         self._compleate_menu()
-
-        return None
-
-    def _blit_tribesmen_list(self, tribesmen_list, command):
-        '''
-        (list) -> None
-
-        Blits list of tribesmen for _party_builder_menu
-        '''
-        text_offset = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
-        counter = 0
-        for tribesman in tribesmen_list:
-            self._create_button('tribesman_button',command + str(counter))
-            self._blit_text(tribesman.name, 'header',text_offset)
-            self._blit_health_points(tribesman)
-
-            counter += 1
-            self._next_line()
-
 
         return None
 
@@ -368,7 +367,7 @@ class Controls:
             '''
             (str, int) -> None
 
-            Blits text untill '\n' character and calls itself with the
+            Blits text until '\n' character and calls itself with the
             remaining text until text is over. Passed lint is drawn
             with corresponding offset.
             '''
@@ -377,8 +376,8 @@ class Controls:
             index = text.find('\n')
             text_img = self.RegularText.render(text[:index], True, (0,0,0))
             text_rect = text_img.get_rect()
-            text_rect.left = POPUP_RECT[0][0] + 200
-            text_rect.top = POPUP_RECT[0][1] + 40 + line * 20
+            text_rect.left = POPUP_RECT[0][0] + POPUP_TXT_INDENT[0]
+            text_rect.top = POPUP_RECT[0][1] + POPUP_TXT_INDENT[1] + line * 20
             self.ScreenSurface.blit(text_img, text_rect)
             if index == -1:
                 return None
@@ -387,15 +386,15 @@ class Controls:
             return None
 
         self.pause = True
-        self.ScreenSurface.blit(self.Loader.controls['popup_background'],
+        self.ScreenSurface.blit(self.Loader.get('background','popup'),
                                 POPUP_RECT)
         popup_type = self.popup_obj.popup['type'][0]
-        self.ScreenSurface.blit(self.Loader.controls[popup_type + '_popup'],POPUP_PIC)
+        self.ScreenSurface.blit(self.Loader.get('popup',popup_type),POPUP_PIC)
         popup_text = self.Txt.popup(self.popup_obj)
         _blit_popup_text(popup_text,1)
         # Popup button
         self._prepare_menu()
-        self._create_button('yes_button', YES)
+        self._blit_button('yes', YES)
         self._blit_text('Done',
                         'header', FIRST_TEXT_COLUMN)
         self._next_line()
@@ -518,7 +517,7 @@ class Controls:
 
         return None
 
-    def _create_button(self, image, method, offset=0):
+    def _blit_button(self, image, method, offset=0):
         '''
         (self, Surface, str, int) -> NoneType
 
@@ -526,12 +525,11 @@ class Controls:
         to left. Creates instance of Button class and adds it in the buttons
         list.
         '''
-
-        draw_rect = self.Loader.controls[image].get_rect()
+        pic = self.Loader.get('button',image)
+        draw_rect = pic.get_rect()
         draw_rect.top = self.menu_line[1]
         draw_rect.left = self.menu_line[0] + offset
-        self.ScreenSurface.blit(self.Loader.controls[image],
-                                 draw_rect)
+        self.ScreenSurface.blit(pic, draw_rect)
         self._blit_frame(draw_rect.x, draw_rect.y,
                          draw_rect.width, draw_rect.height)
         button_dict = {'rect':draw_rect, 'method':method}
@@ -548,11 +546,12 @@ class Controls:
         list.
         '''
 
-        draw_rect = self.Loader.controls[image].get_rect()
+        #draw_rect = self.Loader.controls[image].get_rect()
+        draw_rect = self.Loader.get('icon',image).get_rect()
         draw_rect.top = self.menu_line[1]
         draw_rect.left = self.menu_line[0] + offset
-        self.ScreenSurface.blit(self.Loader.controls[image],
-                                 draw_rect)
+        #self.ScreenSurface.blit(self.Loader.controls[image],draw_rect)
+        self.ScreenSurface.blit(self.Loader.get('icon',image),draw_rect)
 
         return None
 
@@ -571,7 +570,7 @@ class Controls:
 
         Blits tribesman health points.
         '''
-        self._blit_icon('point_icon',SECOND_BUTTON_COLUMN)
+        self._blit_icon('point',SECOND_BUTTON_COLUMN)
         self._blit_text('x' + str(tribesman.points),'header',SECOND_TEXT_COLUMN)
 
         return None
@@ -651,6 +650,9 @@ class Controls:
                 self.pause = False
                 self.ScreenSurface.blit(self.Core.ClearLandscape,
                                         POPUP_RECT, POPUP_RECT)
+                for x in range(1, 5):
+                    for y in range(1,3):
+                        self.Core.map[x][y].blit_markers(self.ScreenSurface)
                 return None
 
             if self.menu_mode == 'party_builder' and\
@@ -710,37 +712,13 @@ class Controls:
         else:
             if self.menu_mode == 'general':
                 (x,y) = tools.pxToCellCoordinate(position)
+                self.Core.set_selected_cell(self.selected.cell,(x,y))
                 self.selected = self.Core.map[x][y]
                 self.update = True
                 print((x,y))
 
         return None
 
-
-'''
-    def _party_builder_parser(self):
-
-        (self) -> NoneType
-
-        Parses command in self.called_method generated by party builder menu
-        and applies them
-
-        if 'add_to_party' in self.called_method:
-            if self.called_method[-2].isnumeric():
-                index = int(self.called_method[-2:])
-            else:
-                index = int(self.called_method[-1])
-            self.party_list.append(self.free_list.pop(index))
-        elif 'remove_from_party' in self.called_method:
-            if self.called_method[-2].isnumeric():
-                index = int(self.called_method[-2:])
-            else:
-                index = int(self.called_method[-1])
-            self.free_list.append(self.party_list.pop(index))
-        self.Party.members = self.party_list[:]
-
-        return None
-'''
 
 
 

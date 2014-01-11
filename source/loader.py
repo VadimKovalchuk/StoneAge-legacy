@@ -12,13 +12,27 @@ constants = tools.importConstants()
 #Game directories
 LAND_TILES_DIR  = constants['LAND_TILES_DIR']   #Default is 'tiles\\'
 SPRITES_DIR     = constants['SPRITES_DIR']      #Default is 'sprite\\'
-CONTROLS_DIR     = constants['CONTROLS_DIR']    #Default is 'controls\\'
+CONTROLS_DIR    = constants['CONTROLS_DIR']     #Default is 'controls\\'
+MARKERS_DIR      = 'markers\\'
+ICONS_DIR        = 'icons\\'
+BACKGROUNDS_DIR = 'backgrounds\\'
+POPUPS_DIR  = 'popups\\'
 #Cell width and height
 LAND_CELL_HEIGHT= constants['LAND_CELL_HEIGHT'] #Calculated
 LAND_CELL_WIDTH = LAND_CELL_HEIGHT
 del constants
 
 BUTTON_SIZE = 35
+SPRITE = 'sprite'
+TILE   = 'tile'
+CONTROLS= 'controls'
+MARKER = 'marker'
+ICON   = 'icon'
+BUTTON = 'button'
+POPUP  = 'popup'
+BACKGROUND = 'background'
+
+LOADER_DEBUG = False
 '''___________________________________________________________'''
 
 class Loader:
@@ -39,68 +53,32 @@ class Loader:
         self.sprites = {}
         self.tiles = {}
         self.controls = {}
-
-        #Building sprite database
-        files = self._build_load_list(SPRITES_DIR)
-        for file in files:
-            base_name = file[:-4]
-            self.sprites[base_name] = self._sprite_sliser(SPRITES_DIR\
-                                                          + file)
-
-        #Building tiles database
-        files = self._build_load_list(LAND_TILES_DIR)
-
-        for file in files:
-            procesed_image = pygame.image.load(LAND_TILES_DIR + file)\
-                             .convert()
-            base_name = file[:-4]
-            self.tiles[base_name] = pygame.transform.scale(procesed_image,\
-                                       (LAND_CELL_WIDTH, LAND_CELL_HEIGHT))
-
-        #Building control elements images database
-        files = self._build_load_list(CONTROLS_DIR)
-        for file in files:
-            procesed_image = pygame.image.load(CONTROLS_DIR + file)
-            procesed_image = procesed_image.convert()
-
-            if 'icon' in file:
-                procesed_image = pygame.transform.scale(procesed_image,\
-                                       (BUTTON_SIZE, BUTTON_SIZE))
-                base_name = file[:-8] + 'button'
-                procesed_image.set_colorkey((0,0,0,255))
-                self.controls[base_name] = procesed_image.copy()
-
-            if 'button' in file:
-                procesed_image = pygame.transform.scale(procesed_image,\
-                                       (BUTTON_SIZE, BUTTON_SIZE))
-
-            procesed_image.set_colorkey((255,255,255,255))
-            base_name = file[:-4]
-            self.controls[base_name] = procesed_image
-
-        print("Sprite files:")
-        self.print_table(self.sprites)
-        print('\n',"Land texture files:")
-        self.print_table(self.tiles)
-        print('\n',"Images for control system:")
-        self.print_table(self.controls)
+        self.cash = {
+            SPRITE:{},
+            TILE:{},
+            BACKGROUND:{},
+            CONTROLS:{},
+            ICON:{},
+            BUTTON:{},
+            POPUP:{},
+            MARKER:{}
+        }
+        self.get('controls','error')
 
         return None
 
-    def _build_load_list(self, path):
+    def _file_exists(self,path ,filename):
         '''
-        (str) -> list
+        (str,str) -> bool
 
-        Gets directory path and returns list of files with .png extention
+        Return True if file exists in following directory
         '''
-
-        files = glob.glob(path + "*.png")
-        
+        files = glob.glob(path + '*')
         for file in files[:]:
             files.remove(file)
             files.append(file[len(path):])
-        
-        return files
+
+        return filename in files
 
     def _sprite_sliser(self, path):
         '''
@@ -142,20 +120,188 @@ class Loader:
         
         return result
 
-    def print_table(self, output_dict):
+    def get(self, table, img_name):
         '''
-        (list) -> None
+        (str, str) -> Surface
 
-        Prints(on screen so far) list of dictionary's keys with 4 elements in row
+        Returns image surface from corresponding image dictionary
         '''
-        result_str = ''
-        counter = 0
-        for key in output_dict:
-            result_str += str(key) + ',\t'
-            counter += 1
-            if counter % 4 == 0:
-                result_str += '\n'
-        print(result_str)
+        assert table in self.cash, 'Incorrect category request passed to Loader'
+        if img_name in self.cash[table]:
+            return self.cash[table][img_name]
+        else:
+            exists = self._load_content(table,img_name)
+            if exists:
+                return self.cash[table][img_name]
+            else:
+                return self.cash['controls']['error']
 
-        return None
+    def _load_content(self, table,img_name):
+        '''
+        (str, str) -> bool
+
+        Calls method responsible for certain image type downloading.
+        Return True if image exists and successfully loaded, otherwise
+        returns False.
+        '''
+        def _icon(img_name, button = False):
+            '''
+            (str) -> bool
+
+            If image exists in 'icons' directory - loads it and returns True.
+            Otherwise returns False.
+            Loaded image is added to 'icon' dictionary with white as
+            transparency color key or to 'buttons' dictionary with black one.
+            '''
+            if button:
+                color_key = (0,0,0,255)
+            else:
+                color_key = (255,255,255,255)
+            path = CONTROLS_DIR + ICONS_DIR
+            if self._file_exists(path, img_name + '.png'):
+                filename = path + img_name + '.png'
+                processed_image = pygame.image.load(filename).convert()
+                processed_image = pygame.transform.scale(processed_image,\
+                                       (BUTTON_SIZE, BUTTON_SIZE))
+                processed_image.set_colorkey(color_key)
+                if button:
+                    self.cash[BUTTON][img_name] = processed_image
+                else:
+                    self.cash[ICON][img_name] = processed_image
+                if LOADER_DEBUG:
+                    if button:
+                        dest = BUTTON
+                    else:
+                        dest = ICON
+                    print('LOADER', filename, 'loaded to', dest)
+                return True
+            else:
+                return False
+
+        def _tile(img_name):
+            '''
+            (str) -> bool
+
+            If tile image exists in 'tile' directory - loads it and
+            returns True. Otherwise returns False.
+            '''
+            if self._file_exists(LAND_TILES_DIR, img_name + '.png'):
+                filename = LAND_TILES_DIR + img_name + '.png'
+                processed_image = pygame.image.load(filename).convert()
+                processed_image = pygame.transform.scale(processed_image,\
+                                       (LAND_CELL_WIDTH, LAND_CELL_HEIGHT))
+                self.cash[TILE][img_name] = processed_image
+                if LOADER_DEBUG:
+                    print('LOADER', filename, 'loaded to tiles')
+                return True
+            else:
+                return False
+
+        def _image(img_name, location):
+            '''
+            (str) -> bool
+
+            If image exists in LOCATION directory - loads it and
+            returns True. Otherwise returns False. No scaling is applied
+            '''
+            if location == BACKGROUND:
+                directory = CONTROLS_DIR + BACKGROUNDS_DIR
+            elif location == POPUP:
+                directory = CONTROLS_DIR + POPUPS_DIR
+
+            if self._file_exists(directory, img_name + '.png'):
+                filename = directory + img_name + '.png'
+                processed_image = pygame.image.load(filename).convert()
+                self.cash[location][img_name] = processed_image
+                if LOADER_DEBUG:
+                    print('LOADER', filename, 'loaded to',location)
+                return True
+            else:
+                return False
+
+        def _sprite(sprite):
+            '''
+            (str) -> bool
+
+            If sprite image exists in 'sprites' directory - loads it and
+            returns True. Otherwise returns False. No scaling is applied
+            '''
+            if self._file_exists(SPRITES_DIR, sprite + '.png'):
+                filename = SPRITES_DIR + sprite + '.png'
+                sprite_list = self._sprite_sliser(filename)
+                self.cash[SPRITE][img_name] = sprite_list
+                if LOADER_DEBUG:
+                    print('LOADER', filename, 'loaded to sprites')
+                return True
+            else:
+                return False
+
+        def _controls(img_name):
+            '''
+            (str) -> bool
+
+            If image exists in 'controls' directory or its 'icons' or
+            'buttons' sub folders - loads it and returns True.
+            Otherwise returns False.
+            '''
+            if self._file_exists(CONTROLS_DIR, img_name + '.png'):
+                filename = CONTROLS_DIR + img_name + '.png'
+                processed_image = pygame.image.load(filename).convert()
+                self.cash[CONTROLS][img_name] = processed_image
+                if LOADER_DEBUG:
+                    print('LOADER', filename, 'loaded to controls')
+                return True
+            else:
+                return False
+
+        def _marker(img_name):
+            '''
+            (str) -> bool
+
+            If marker exists in 'marker' directory - loads it and
+            returns True. Otherwise returns False.
+            '''
+            if self._file_exists(CONTROLS_DIR + MARKERS_DIR, img_name + '.png'):
+                filename = CONTROLS_DIR + MARKERS_DIR + img_name + '.png'
+                processed_image = pygame.image.load(filename).convert()
+                self.cash[MARKER][img_name] = pygame.transform.\
+                    scale(processed_image,(LAND_CELL_WIDTH, LAND_CELL_HEIGHT))
+                if LOADER_DEBUG:
+                    print('LOADER', filename, 'loaded to markers')
+                return True
+            else:
+                return False
+
+        if table == ICON:
+            return _icon(img_name)
+        elif table == BUTTON:
+            return _icon(img_name, button=True)
+        elif table == POPUP:
+            return _image(img_name,POPUP)
+        elif table == TILE:
+            return _tile(img_name)
+        elif table == BACKGROUND:
+            return _image(img_name,BACKGROUND)
+        elif table == MARKER:
+            return _marker(img_name)
+        elif table == SPRITE:
+            return _sprite(img_name)
+        elif table == CONTROLS:
+            return _controls(img_name)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

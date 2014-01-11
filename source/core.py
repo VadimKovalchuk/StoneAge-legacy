@@ -51,6 +51,7 @@ class Core:
         self.update = False
         self.popup = {}
         self.raise_popup = False
+        self.marker_tasks = {'refresh':[],'remit':[]}
 
         # Building starting map from map line
         for x in range(0,LAND_NUM_X):
@@ -76,6 +77,8 @@ class Core:
 
         assert len(self.tribes), 'No tribes found at map'
         self.active_tribe = self.tribes[0]
+        self.map[0][0].markers.append('selection')
+        self.marker_tasks['refresh'].append(self.map[0][0])
 
         self.PathFinder = path_finder.PathFinder(self.map)
 
@@ -83,7 +86,7 @@ class Core:
 
     def blit_map(self):
         '''
-        Blits entire landscape on the Screeen.
+        Blits entire landscape on the Screen.
         ??? should be implementet priority for objects and landscape animation
         '''
         for x in range(0,LAND_NUM_X):
@@ -99,7 +102,13 @@ class Core:
         Blits native landscape in rectangles where sprites were blited.
         '''
         for obj in self.active_sprites:
-            self.ScreenSurface.blit(self.ClearLandscape, obj.Rect, obj.Rect)
+            self.ScreenSurface.blit(self.ClearLandscape, obj.rect, obj.rect)
+
+        for cell in self.marker_tasks['remit'][:]:
+            self.ScreenSurface.blit(self.ClearLandscape, cell.rect, cell.rect)
+            self.marker_tasks['remit'].remove(cell)
+            if len(cell.markers):
+                cell.blit_markers(self.ScreenSurface)
 
         return None
 
@@ -123,7 +132,7 @@ class Core:
         '''
         
         for obj in self.active_sprites[:]:
-            if obj.visible == False:
+            if not obj.visible:
                 self.active_sprites.remove(obj)
                 
         for obj in self.active_sprites:
@@ -139,6 +148,78 @@ class Core:
         for obj in self.active_sprites:
             obj.blit(self.ScreenSurface)
 
+        for cell in self.marker_tasks['refresh'][:]:
+            cell.blit_markers(self.ScreenSurface)
+            self.marker_tasks['refresh'].remove(cell)
+
+        return None
+
+    def update_markers(self, all=False):
+        '''
+        (None) -> None
+
+        Verifies if any markers should be active for land cell.
+        If necessary activates them, and remits.
+        Also refreshes them in case of collision with sprite.
+        '''
+        def _check_activity(cell):
+            '''
+            (None) -> None
+
+            Enables activity marker when tribesmen enters wild location cell
+            and remits it when everybody leaves it.
+            '''
+            if cell.land_type == 'camp':
+                return None
+            if self.game_phase == SEND:
+                if 'activity' in cell.markers:
+                    return None
+                for tribee in self.tribes:
+                    for man in tribee.population:
+                        if not man.visible and man.cell == cell.cell:
+                            cell.markers.append('activity')
+                            return None
+            elif self.game_phase == RETURN:
+                if 'activity' not in cell.markers:
+                    return None
+                remit = True
+                for tribee in self.tribes:
+                    for man in tribee.population:
+                        if (man not in self.active_sprites) and\
+                                man.cell == cell.cell:
+                            remit = False
+                if remit:
+                    cell.markers.remove('activity')
+                    self.marker_tasks['remit'].append(cell)
+            return None
+
+
+        for x in range(0,LAND_NUM_X):
+            for y in range(0,LAND_NUM_Y):
+                if all:
+                    self.marker_tasks['refresh'].append(self.map[x][y])
+                _check_activity(self.map[x][y])
+                if len(self.map[x][y].markers) and \
+                        (self.map[x][y] not in self.marker_tasks['refresh']):
+                    for sprite in self.active_sprites:
+                        if self.map[x][y].rect.colliderect(sprite.rect):
+                            self.marker_tasks['refresh'].append(self.map[x][y])
+
+        return None
+
+    def set_selected_cell(self, old, new):
+        '''
+        ((int,int)) -> None
+
+        Remits "selected" marker from old cell and sets it for new one
+        '''
+        x,y = old
+        self.map[x][y].markers.remove('selection')
+        self.marker_tasks['remit'].append(self.map[x][y])
+        x,y = new
+        self.map[x][y].markers.append('selection')
+        self.marker_tasks['refresh'].append(self.map[x][y])
+
         return None
 
     def flow(self):
@@ -153,7 +234,7 @@ class Core:
             - return - tribesmen went home
             - evening - parties returns back home and eats
         '''
-
+        self.update_markers()
         all_done_flag = True
         for tribe in self.tribes:
             if not tribe.ready:

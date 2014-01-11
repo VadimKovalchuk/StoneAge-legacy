@@ -49,7 +49,7 @@ class Tribe:
         self.popup = {}
         self.raise_popup = False
         self.query_timer = pygame.time.get_ticks()
-        self.meeple_sprite = Loader.sprites['player_walk']
+        self.meeple_sprite = Loader.get('sprite','player_walk')
         self.player_type = player
         self.AI = ai.Ai(self)
         self.resources = {

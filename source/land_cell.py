@@ -21,6 +21,8 @@ MODERATE = constants['MODERATE']#Default is 'moderate'
 MANY = constants['MANY']        #Default is 'many'
 RICH = constants['RICH']        #Default is 'rich'
 del constants
+
+MARKER_PRIORITY = ['activity','selection']
 '''___________________________________________________________'''
 
 class LandCell:
@@ -48,11 +50,12 @@ class LandCell:
                                 self.cell[1]*LAND_CELL_HEIGHT,\
                                 LAND_CELL_WIDTH, LAND_CELL_HEIGHT)
         self.Loader = Loader
-        self.tile_img = self.Loader.tiles[land_type]
+        self.tile_img = self.Loader.get('tile',land_type)
         self.resources = {'food':0, 'hunt':0, 'wood':0, 'stone':0}
         self.resource_limit = {}
         self.predators = {'bear':0, 'wolfs':0, 'boar':0,'snake':0,
                           'rockfall':0, 'drawn':0}
+        self.markers = []
         self.custom= {}
 
         #Preset processing
@@ -63,11 +66,24 @@ class LandCell:
     def blit(self, Surface):
         '''
         (Surface) -> True
+
+        Blits land tile on map Surface.
         '''
         Surface.blit(self.tile_img, self.rect)
-        
 
         return True
+
+    def blit_markers(self, Surface):
+        '''
+        (Surface) -> None
+
+        Blits marker over the map and sprites.
+        '''
+        for marker in MARKER_PRIORITY:
+            if marker in self.markers:
+                Surface.blit(self.Loader.get('marker', marker), self.rect)
+
+        return None
                         
     def __str__(self):
         '''

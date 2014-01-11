@@ -87,13 +87,10 @@ def main():
         Tribe.name = tribe_name[count]
         count += 1
 
-
-    five_seconds = pygame.time.get_ticks()
     #tools.drawNet(ScreenSurface)
 
     while True:
         # check for the QUIT event
-
         for event in pygame.event.get():
             if event.type == QUIT:
                 Core.Logger.finalize()

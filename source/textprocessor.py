@@ -119,7 +119,7 @@ class TextProcessor:
 
         obj.raise_popup = False
         text = self._fit_length(text)
-        print(popup_type.capitalize() + ' popup:\n' + text)
+        #print(popup_type.capitalize() + ' popup:\n' + text)
         return text
 
     def _gen_popup_text(self,message_id, arguments):

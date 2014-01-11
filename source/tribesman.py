@@ -47,7 +47,7 @@ class Tribesman:
         self.Sprite = Sprite #actual sprite
         self.cell = cell_coords #Location cell coordinates(X,Y) on map
         self.visible = False # visible or invisible character
-        self.Rect = pygame.Rect((0,0), (50, 50))
+        self.rect = pygame.Rect((0,0), (50, 50))
         self.setLocation(self.cell)
 
         self.name = name #tribesman name
@@ -145,7 +145,7 @@ class Tribesman:
             if self.m_movement_direction not in [1,2,3,4,6,7,8,9]:
                 self.m_movement_direction = 3
             ScreenSurface.blit(self.Sprite[self.m_movement_direction]\
-                               [self.frame], self.Rect)
+                               [self.frame], self.rect)
 
         return None
 
@@ -158,7 +158,7 @@ class Tribesman:
         '''
         
         self.cell = cell_coordinates
-        self.Rect.center = tools.cellToPxCoordinate(self.cell)
+        self.rect.center = tools.cellToPxCoordinate(self.cell)
 
         return None
     
@@ -202,7 +202,7 @@ class Tribesman:
         self._updateFrameIndex()
         
         # If tribesman reached waypoint than processing path to next waypoint
-        if self.Rect.center == tools.cellToPxCoordinate(self.m_destination_cell):
+        if self.rect.center == tools.cellToPxCoordinate(self.m_destination_cell):
 
             # Destination cell becones location cell
             self.cell = self.m_destination_cell
@@ -218,7 +218,7 @@ class Tribesman:
 
             # Updating tribesman rectangle in case if any error in coordinates
             # calculation occurs
-            self.Rect.center = tools.cellToPxCoordinate(self.cell)
+            self.rect.center = tools.cellToPxCoordinate(self.cell)
 
             # Gets difference between heading coordinate and current for using
             # in selection for movement and corresponding way sprite
@@ -230,7 +230,7 @@ class Tribesman:
                                         self.m_cell_difference[1] * 3
 
         #Move tribesman rectangle
-        self.Rect.move_ip(self.m_cell_difference[0]*self.m_speed,\
+        self.rect.move_ip(self.m_cell_difference[0]*self.m_speed,\
                           self.m_cell_difference[1]*self.m_speed)
 
         return None
