@@ -124,9 +124,13 @@ class Rules:
         Calculates how many points is spent on resource gathering.
         '''
         points = 0
-
+        resource = Party.purpose[4:]
         for man in Party.members:
-            man_points = man.points - penalty
+            if resource == 'hunt':
+                amount = man.hit()
+            else:
+                amount = man.points
+            man_points = amount - penalty
             if man_points < 0:
                 man_points = 0
             points += man_points

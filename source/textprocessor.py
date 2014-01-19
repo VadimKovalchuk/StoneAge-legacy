@@ -6,11 +6,12 @@ from source import tools
 constants = {}
 constants = tools.importConstants()
 '''___________________________________________________________'''
+#Active language
+LANGUAGE        = constants['LANGUAGE']
 #Game directories
-CONTROLS_DIR     = constants['CONTROLS_DIR']    #Default is 'controls\\'
+CONTROLS_DIR    = constants['CONTROLS_DIR']    #Default is 'controls\\'
+TXT_SUBFOLDER   = constants['TXT_SUBFOLDER']   #Default is 'text\\'
 del constants
-TXT_SUBFOLDER = 'text\\'
-LANGUAGE = 'EN'
 
 POPUP_ORDER ={
     'daily':    [1101,1301,1304,1303,1302,1201,1202],

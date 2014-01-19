@@ -1,0 +1,8 @@
+name=2003
+type=weapon
+points=1,2,3
+durability=40
+consumable=0
+description=2004
+ingredients=wood:3,points:3
+amount=1

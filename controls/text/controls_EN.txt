@@ -24,3 +24,7 @@
 1304: peaces of skin are dressed
 1305: food are required for feeding
 1306: stocked food are required
+2001:Bone knife
+2002:Sharpened bone with more or less comfortable handle
+2003:Basic spear
+2004:Siplest but quite efective weapon

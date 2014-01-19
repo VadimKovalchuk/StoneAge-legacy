@@ -7,6 +7,8 @@ from source import ai
 from source import tools
 constants = tools.importConstants()
 '''___________________________________________________________'''
+#Loader image categories
+SPRITE        = constants['SPRITE']
 #Timing and delay intervals
 SEND_INTERVAL = constants['SEND_INTERVAL']        #Default is 'food'
 #Resource types
@@ -49,7 +51,7 @@ class Tribe:
         self.popup = {}
         self.raise_popup = False
         self.query_timer = pygame.time.get_ticks()
-        self.meeple_sprite = Loader.get('sprite','player_walk')
+        self.meeple_sprite = Loader.get(SPRITE,'player_walk')
         self.player_type = player
         self.AI = ai.Ai(self)
         self.resources = {
@@ -74,8 +76,7 @@ class Tribe:
         parameters and returns reference to added one.
         '''
         new_member = tribesman.Tribesman(self.meeple_sprite, name,\
-                                         self.home_cell.cell,\
-                                         instrument,wear,custom)
+                                         self.home_cell.cell)
         self.population.append(new_member)
 
         return new_member
@@ -188,14 +189,13 @@ class Tribe:
                     end = group.destination_cell
                 waypoint = self.Core.PathFinder.get_path(start, end)
                 party_member.travel(waypoint)
-
+        #Fisrt should be send tribesmen that have to pass longer distance
         for n in range(0,len(self.send_query)-1):
             for i in range(0,len(self.send_query)-1):
                 if len(self.send_query[i].m_waypoints) < \
                         len(self.send_query[i+1].m_waypoints):
                     self.send_query[i],self.send_query[i+1] = \
                         self.send_query[i+1],self.send_query[i]
-
         self.ready = True
 
         return None

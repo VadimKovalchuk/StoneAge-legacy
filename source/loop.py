@@ -5,7 +5,7 @@ from pygame.locals import *
 
 #CONSTANTS
 #Uplading constants from setup.ini file
-from source import core, controls, scenario, loader, tools
+from source import core, controls, scenario, loader, tools, items
 
 constants = tools.importConstants()
 '___________________________________________________________'
@@ -43,26 +43,6 @@ def main():
     Controls = controls.Controls(ScreenSurface, Core, Loader)
     #Drawing clear landscape
     Core.blit_map()
-    '_________________________________________________________________'
-    'PATH FINDER SANDBOX'
-
-    #Core.PathFinder.get_path((1,1),(2,3))
-    #Core.PathFinder.get_path((1,1),(4,0))
-    #Core.PathFinder.get_path((2,1),(2,3))
-    #print(Core.PathFinder.path_collection)
-
-    def gloryCircle(Tribesman):
-        Tribesman.setLocation((3,0))
-        waypoints = [(2,0),(1,1),(1,2),(2,3),(3,3),(4,2),(4,1),(3,0)]
-        Tribesman.travel(waypoints)
-
-    def gloryCircle2(Tribesman):
-        Tribesman.setLocation((1,1))
-        waypoints = [(2,0),(1,0),(0,0),(0,1),(0,2),(1,3),(2,3),(3,3),(4,3),(5,2)
-                     ,(5,1),(5,0),(4,0),(4,1),(3,1),(2,1),(1,1)]
-        Tribesman.travel(waypoints)
-
-    '_________________________________________________________________'
 
     tribe_name = ['Gabonga','CPU1','CPU2','CPU3']
     count = 0
@@ -84,10 +64,14 @@ def main():
         Tribe.add_tribesman("Lem")
         Tribe.add_tribesman("Nurg")
         Tribe.add_tribesman("Pela")'''
+        for i in range(1,6):
+            Tribe.population[i - 1].add_item(items.Item(i + 2))
         Tribe.name = tribe_name[count]
         count += 1
 
-    #tools.drawNet(ScreenSurface)
+    #itm = items.Item(1)
+    #itm.hit()
+
 
     while True:
         # check for the QUIT event

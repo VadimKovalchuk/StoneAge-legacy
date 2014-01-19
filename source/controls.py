@@ -2,13 +2,19 @@ import pygame
 
 #CONSTANTS
 #Uplading constants from setup.ini file
-from source import tools, party, textprocessor
+from source import tools, party
 
 constants = tools.importConstants()
 '''___________________________________________________________'''
 #Set up window resolution
 WINDOW_WIDTH    = constants['WINDOW_WIDTH']     #Default 1280
 WINDOW_HEIGHT   = constants['WINDOW_HEIGHT']    #Default 720
+#Loader image categories
+CONTROLS    = constants['CONTROLS']     #Default is 'controls'
+ICON        = constants['ICON']         #Default is 'icon'
+BUTTON      = constants['BUTTON']       #Default is 'button'
+POPUP       = constants['POPUP']        #Default is 'popup'
+BACKGROUND  = constants['BACKGROUND']   #Default is 'background'
 #Side(control) panel and game field width
 SIDE_PANEL_WIDTH= constants['SIDE_PANEL_WIDTH'] #Calculated
 FIELD_WIDTH = constants['FIELD_WIDTH']          #Calculated
@@ -31,6 +37,7 @@ SECOND_BUTTON_COLUMN = int(BUTTON_SIZE *2.5)
 SECOND_TEXT_COLUMN = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
 
 #Buttons
+SUBMODE = 'submode'
 YES = 'yes'
 NO = 'no'
 PROCESS_MAN =  'process_man'
@@ -65,12 +72,13 @@ class Controls:
         self.Loader = Loader
         self.Core = Core
         self.Tribe = Core.active_tribe
-        self.Txt = textprocessor.TextProcessor()
+        self.Txt = self.Core.Txt
         self.selected = self.Core.map[0][0]
         self.pause = False
         self.update = True
         self.buttons = []
         self.menu_mode = 'general'
+        self.menu_submode = ''
         self.popup_obj = None
         self.called_method = ''
         self.Party = None
@@ -99,6 +107,7 @@ class Controls:
             'spear':        'spear_button',
             'bone_spear':   'bone_spear_button',
             'stone_spear':  'stone_spear_button',
+            'stone_hammer':  'stone_hammer_button',
             'stone_axe':    'stone_axe_button'
         }
         self.armor_image_for = {
@@ -160,7 +169,7 @@ class Controls:
         Blits background image adn frame around it.
         '''
 
-        self.ScreenSurface.blit(self.Loader.get('background','menu'),
+        self.ScreenSurface.blit(self.Loader.get(BACKGROUND,'menu'),
                                 ((WINDOW_WIDTH - SIDE_PANEL_WIDTH,0),
                                  (SIDE_PANEL_WIDTH,WINDOW_HEIGHT)))
         #Blits frame around side menu edge
@@ -179,7 +188,7 @@ class Controls:
         Verifies if popup is required and prepares data for display.
         '''
         if self.menu_mode == 'general' and self.Core.check_popups():
-            self.menu_mode = 'popup'
+            self.menu_mode = POPUP
             #For which object popup should be raised
             for tribe in self.Core.tribes:
                 if tribe.raise_popup:
@@ -216,7 +225,11 @@ class Controls:
                 cost_table = self.Core.Rules.resource_cost_matrix
                 land_type = self.selected.land_type
                 cost = cost_table[land_type][resource]
-                self._blit_icon('point',SECOND_BUTTON_COLUMN)
+                if resource == 'hunt':
+                    img = 'hit_point'
+                else:
+                    img = 'point'
+                self._blit_icon(img,SECOND_BUTTON_COLUMN)
                 self._blit_text('x '+str(cost),'header',SECOND_TEXT_COLUMN)
 
                 self._next_line()
@@ -245,6 +258,8 @@ class Controls:
         self._blit_text('x ' + str(len(self.Tribe.population)),
                         'header', FIRST_TEXT_COLUMN)
         self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
+        self._blit_button('inventory',PROCESS_FOOD,
+                            offset=SECOND_TEXT_COLUMN[0])
         self._next_line()
 
         self._blit_icon('meat')
@@ -260,6 +275,9 @@ class Controls:
         self._blit_icon('bone')
         self._blit_text('x ' + str(self.Tribe.get_resource('bones')),
                         'header', FIRST_TEXT_COLUMN)
+        self._blit_button('workshop',PROCESS_FOOD,
+                            offset=SECOND_BUTTON_COLUMN)
+        #self._blit_icon('item6',SECOND_TEXT_COLUMN[0])
         self._next_line()
 
         self._blit_icon('moist_skin')
@@ -327,10 +345,26 @@ class Controls:
             for tribesman in tribesmen_list:
                 self._blit_button('tribesman',command + str(counter))
                 self._blit_text(tribesman.name, 'header',text_offset)
-                self._blit_health_points(tribesman)
-
+                if self.menu_submode == 'points':
+                    self._blit_health_points(tribesman)
+                elif self.menu_submode == 'equip':
+                    self._blit_equip(tribesman)
                 counter += 1
                 self._next_line()
+            return None
+
+        def _submode_switch_button():
+            '''
+            (None) -> None
+
+            Blits button for menu submode switching.
+            '''
+            if self.menu_submode == 'points':
+                mode_image = 'hit_point'
+            elif self.menu_submode == 'equip':
+                mode_image = 'point'
+            self._blit_button(mode_image,SUBMODE,FIRST_TEXT_COLUMN[0])
+
             return None
 
         _party_builder_parser()
@@ -348,6 +382,7 @@ class Controls:
 
         self._blit_delimiter()
         self._blit_button('yes', YES)
+        _submode_switch_button()
         offset = SIDE_PANEL_WIDTH - BUTTON_SIZE - LINE_WIDTH * 8
         self._blit_button('no', NO, offset)
         self._next_line()
@@ -389,7 +424,7 @@ class Controls:
         self.ScreenSurface.blit(self.Loader.get('background','popup'),
                                 POPUP_RECT)
         popup_type = self.popup_obj.popup['type'][0]
-        self.ScreenSurface.blit(self.Loader.get('popup',popup_type),POPUP_PIC)
+        self.ScreenSurface.blit(self.Loader.get(POPUP,popup_type),POPUP_PIC)
         popup_text = self.Txt.popup(self.popup_obj)
         _blit_popup_text(popup_text,1)
         # Popup button
@@ -525,7 +560,7 @@ class Controls:
         to left. Creates instance of Button class and adds it in the buttons
         list.
         '''
-        pic = self.Loader.get('button',image)
+        pic = self.Loader.get(BUTTON,image)
         draw_rect = pic.get_rect()
         draw_rect.top = self.menu_line[1]
         draw_rect.left = self.menu_line[0] + offset
@@ -547,11 +582,11 @@ class Controls:
         '''
 
         #draw_rect = self.Loader.controls[image].get_rect()
-        draw_rect = self.Loader.get('icon',image).get_rect()
+        draw_rect = self.Loader.get(ICON,image).get_rect()
         draw_rect.top = self.menu_line[1]
         draw_rect.left = self.menu_line[0] + offset
         #self.ScreenSurface.blit(self.Loader.controls[image],draw_rect)
-        self.ScreenSurface.blit(self.Loader.get('icon',image),draw_rect)
+        self.ScreenSurface.blit(self.Loader.get(ICON,image),draw_rect)
 
         return None
 
@@ -575,13 +610,21 @@ class Controls:
 
         return None
 
-    def _blit_weapon(self, tribesman, offset= 0):
+    def _blit_equip(self, tribesman):
         '''
         (tribesman) -> None
 
-        Blits tribesman weapon.
-        !!!In current implementation only as icon.
+        Blits tribesman weapon, armor, consumable item and its amount.
         '''
+        if tribesman.weapon:
+            image = 'item' + str(tribesman.weapon.id)
+        else:
+            image = 'unarmed'
+        self._blit_icon(image,SECOND_BUTTON_COLUMN)
+        if tribesman.wear:
+            image = 'item' + str(tribesman.wear.id)
+        else:
+            image = 'undressed'
 
         return None
 
@@ -609,6 +652,7 @@ class Controls:
             tribesmen participation.
             '''
             self.menu_mode = 'party_builder'
+            self.menu_submode = 'points'
             self.Party = party.Party(self.Tribe, self.selected.cell,
                                      self.called_method)
             self.free_list = self.Tribe.get_free_tribesmen()
@@ -686,6 +730,32 @@ class Controls:
 
             return None
 
+        def _switch_submode():
+            '''
+            (None) -> None
+
+            Changes submode for menus:
+            - party builder
+            '''
+            def _sw_party_builder():
+                '''
+                (None) -> None
+
+                Switches between submodes in party builder mode.
+                '''
+                if self.menu_submode == 'points':
+                    self.menu_submode = 'equip'
+                elif self.menu_submode == 'equip':
+                    self.menu_submode = 'points'
+                else:
+                    assert False, 'Incorrect party builder submode initiated.'
+                return None
+
+            if self.menu_mode == 'party_builder':
+                _sw_party_builder()
+
+            return None
+
         def _print_parties():
             '''
             (None) -> None
@@ -708,6 +778,8 @@ class Controls:
                         _yes_handler()
                     elif self.called_method == NO:
                         _no_handler()
+                    elif self.called_method == SUBMODE:
+                        _switch_submode()
 
         else:
             if self.menu_mode == 'general':

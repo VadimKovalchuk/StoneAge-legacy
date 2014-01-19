@@ -29,7 +29,7 @@ del constants
 class Tribesman:
     """ Single man from tribe class """
 
-    def __init__(self, Sprite, name, cell_coords, instrument = None, wear = None, custom = None):
+    def __init__(self, Sprite, name, cell_coords):
         '''
         (Sprite, str, (int, int), str, str, dict) -> NoneType
 
@@ -39,9 +39,9 @@ class Tribesman:
         - absolute coordinates
         - (!not implemented) tribesman rectangle
         - owned instrument/weapon;
-        - weared costume/armor;
+        - worn costume/armor;
         - inventory (dictionary where key is a item and value is its nuber)
-        - custom atribute for quests purposes
+        - custom attribute for quests purposes
         '''
         
         self.Sprite = Sprite #actual sprite
@@ -52,10 +52,11 @@ class Tribesman:
 
         self.name = name #tribesman name
         self.points = 5
-        self.instrument = instrument #available instrument/weapon
-        self.wear = wear # weared costume/armor
-        self.inventory = [] # caryed resources and items
-        self.custom = custom
+        self.weapon = None
+        self.wear = None
+        self.inventory = [] # carried resources and items
+
+
 
         ''' FRAME TRACKING VARIABLES
         Track the time we started, and the time between updates.
@@ -116,10 +117,55 @@ class Tribesman:
         if self.points == 0:
             return False
         elif self.points > 0:
-            return True
-        else:
             assert 0 <= self.points <= 5, \
                 'Incorrect number of health points'
+            return True
+
+    def add_item(self,item):
+        '''
+        (list) -> None
+
+        Adds item into tribesman inventory. If this is a weapon or armor
+        and tribesman already equipped with this item type - returns old one.
+        '''
+        item.owner = self
+        if item.type == 'weapon':
+            if not self.weapon:
+                self.weapon = item
+                return None
+            else:
+                returned, self.weapon = self.weapon, item
+                returned.owner = None
+                return returned
+        elif item.type == 'wear':
+            if not self.wear:
+                self.wear = item
+                return None
+            else:
+                returned, self.wear = self.wear, item
+                returned.owner = None
+                return returned
+        else:
+            self.inventory.append(item)
+        return None
+
+    def hit(self):
+        '''
+        (None) -> int
+
+        Deals hit points according to equipped weapon. If no weapon is equipped
+        deals 1 hit point.
+        '''
+        if self.weapon:
+            if self.weapon.consumable:
+                pass
+            else:
+                points = self.weapon.hit()
+            if self.weapon.expired_durability():
+                self.weapon = None
+        else:
+            points = 1
+        return points
 
     def _updateFrameIndex(self):
         # Note that this doesn't work if it's been more that self._delay
@@ -245,8 +291,15 @@ class Tribesman:
         >>> print(cell)
 
         '''
-        return str(self.name)+" with "+str(self.points)+" points. Located at"\
-               +str(self.cell)
+        string = str(self.name)+"("+str(self.points)+"points)"
+        if self.weapon:
+            string += ',WP:' + str(self.weapon)
+        if self.wear:
+            string += ',WR:' + str(self.wear)
+        for item in self.inventory:
+            string += ',' + str(self.wear)
+        string += '. '
+        return string
 
         
 

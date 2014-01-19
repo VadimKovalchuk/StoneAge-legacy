@@ -4,6 +4,7 @@ from source import tribe
 from source import path_finder
 from source import rules
 from source import logger
+from source import textprocessor
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -29,7 +30,7 @@ class Core:
 
     def __init__(self,ScreenSurface, Scenario, Loader):
         '''
-        (Surface, Scenarion) -> NoneType
+        (Surface, Scenarion) -> None
 
         Loads map via scenario and builds it with land cells
         '''
@@ -39,12 +40,15 @@ class Core:
         self.Scenario = Scenario
         self.Loader = Loader
         self.map = []
-        self.active_sprites = []
         self.tribes = []
         self.active_tribe = None
+        self.active_sprites = []
+
         self.PathFinder = None
         self.Logger = logger.Logger()
         self.Rules = rules.Rules(self)
+        self.Txt = textprocessor.TextProcessor()
+
         self.game_mode = 'regular'
         self.game_phase = 0
         self.move_counter = 0
@@ -265,7 +269,7 @@ class Core:
 
         Sets next game phase. When last phase is reached - sets firs one.
         '''
-        if self.game_phase == 4:
+        if self.game_phase == EVENING:
             #Turn is over
             self.environment_update()
             self.move_counter += 1
@@ -295,7 +299,6 @@ class Core:
                 self.update = True
                 return True
 
-        return None
     
 
 

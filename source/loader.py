@@ -1,38 +1,38 @@
 import glob
-
 import pygame
+from source import tools
 
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import tools
 
-constants = {}
 constants = tools.importConstants()
 '''___________________________________________________________'''
 #Game directories
 LAND_TILES_DIR  = constants['LAND_TILES_DIR']   #Default is 'tiles\\'
 SPRITES_DIR     = constants['SPRITES_DIR']      #Default is 'sprite\\'
 CONTROLS_DIR    = constants['CONTROLS_DIR']     #Default is 'controls\\'
-MARKERS_DIR      = 'markers\\'
-ICONS_DIR        = 'icons\\'
-BACKGROUNDS_DIR = 'backgrounds\\'
-POPUPS_DIR  = 'popups\\'
+MARKERS_DIR     = constants['MARKERS_DIR']      #Default is 'markers\\'
+ICONS_DIR       = constants['ICONS_DIR']        #Default is 'icons\\'
+BACKGROUNDS_DIR = constants['BACKGROUNDS_DIR']  #Default is 'backgrounds\\'
+POPUPS_DIR      = constants['POPUPS_DIR']       #Default is 'popups\\'
+#Loader image categories
+SPRITE      = constants['SPRITE']       #Default is 'sprite'
+TILE        = constants['TILE']         #Default is 'tile'
+CONTROLS    = constants['CONTROLS']     #Default is 'controls'
+MARKER      = constants['MARKER']       #Default is 'marker'
+ICON        = constants['ICON']         #Default is 'icon'
+BUTTON      = constants['BUTTON']       #Default is 'button'
+POPUP       = constants['POPUP']        #Default is 'popup'
+BACKGROUND  = constants['BACKGROUND']   #Default is 'background'
 #Cell width and height
 LAND_CELL_HEIGHT= constants['LAND_CELL_HEIGHT'] #Calculated
 LAND_CELL_WIDTH = LAND_CELL_HEIGHT
+#Debug
+LOADER_DEBUG    = constants['LOADER_DEBUG']
 del constants
 
 BUTTON_SIZE = 35
-SPRITE = 'sprite'
-TILE   = 'tile'
-CONTROLS= 'controls'
-MARKER = 'marker'
-ICON   = 'icon'
-BUTTON = 'button'
-POPUP  = 'popup'
-BACKGROUND = 'background'
-
-LOADER_DEBUG = False
 '''___________________________________________________________'''
 
 class Loader:
@@ -66,19 +66,6 @@ class Loader:
         self.get('controls','error')
 
         return None
-
-    def _file_exists(self,path ,filename):
-        '''
-        (str,str) -> bool
-
-        Return True if file exists in following directory
-        '''
-        files = glob.glob(path + '*')
-        for file in files[:]:
-            files.remove(file)
-            files.append(file[len(path):])
-
-        return filename in files
 
     def _sprite_sliser(self, path):
         '''
@@ -158,7 +145,7 @@ class Loader:
             else:
                 color_key = (255,255,255,255)
             path = CONTROLS_DIR + ICONS_DIR
-            if self._file_exists(path, img_name + '.png'):
+            if tools.file_exists(path, img_name + '.png'):
                 filename = path + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
                 processed_image = pygame.transform.scale(processed_image,\
@@ -185,7 +172,7 @@ class Loader:
             If tile image exists in 'tile' directory - loads it and
             returns True. Otherwise returns False.
             '''
-            if self._file_exists(LAND_TILES_DIR, img_name + '.png'):
+            if tools.file_exists(LAND_TILES_DIR, img_name + '.png'):
                 filename = LAND_TILES_DIR + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
                 processed_image = pygame.transform.scale(processed_image,\
@@ -209,7 +196,7 @@ class Loader:
             elif location == POPUP:
                 directory = CONTROLS_DIR + POPUPS_DIR
 
-            if self._file_exists(directory, img_name + '.png'):
+            if tools.file_exists(directory, img_name + '.png'):
                 filename = directory + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
                 self.cash[location][img_name] = processed_image
@@ -226,7 +213,7 @@ class Loader:
             If sprite image exists in 'sprites' directory - loads it and
             returns True. Otherwise returns False. No scaling is applied
             '''
-            if self._file_exists(SPRITES_DIR, sprite + '.png'):
+            if tools.file_exists(SPRITES_DIR, sprite + '.png'):
                 filename = SPRITES_DIR + sprite + '.png'
                 sprite_list = self._sprite_sliser(filename)
                 self.cash[SPRITE][img_name] = sprite_list
@@ -244,7 +231,7 @@ class Loader:
             'buttons' sub folders - loads it and returns True.
             Otherwise returns False.
             '''
-            if self._file_exists(CONTROLS_DIR, img_name + '.png'):
+            if tools.file_exists(CONTROLS_DIR, img_name + '.png'):
                 filename = CONTROLS_DIR + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
                 self.cash[CONTROLS][img_name] = processed_image
@@ -261,7 +248,7 @@ class Loader:
             If marker exists in 'marker' directory - loads it and
             returns True. Otherwise returns False.
             '''
-            if self._file_exists(CONTROLS_DIR + MARKERS_DIR, img_name + '.png'):
+            if tools.file_exists(CONTROLS_DIR + MARKERS_DIR, img_name + '.png'):
                 filename = CONTROLS_DIR + MARKERS_DIR + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
                 self.cash[MARKER][img_name] = pygame.transform.\

@@ -1,0 +1,8 @@
+name=2001
+type=weapon
+points=1,2
+durability=20
+consumable=0
+description=2002
+ingredients=bones:1,points:1
+amount=1
