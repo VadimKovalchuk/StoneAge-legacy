@@ -69,7 +69,7 @@ class Rules:
         Party.loot = {resource:resource_amount}
 
         line = ' '.join([str(resource_amount),resource])
-        Party.Tribe.add_to_popup(1101, line)
+        Party.Tribe.add_to_popup(2001, line) #Collected
         self._log('Collected: ' + line)
 
         return None
@@ -160,7 +160,7 @@ class Rules:
             rest = Party.Tribe.consume_resource(FOOD,amount)
             stocked = amount-rest
             Party.Tribe.add_resource(STOCKED_FOOD, stocked)
-            Party.Tribe.add_to_popup(1301, stocked)
+            Party.Tribe.add_to_popup(4001, stocked) # food are stocked
             self._log(str(stocked) + ' food are stocked.')
 
         elif 'man' in Party.purpose:
@@ -171,25 +171,25 @@ class Rules:
                 if man.points == 5 and woman.points == 5:
                     name = 'Kid'
                     Tribe.add_tribesman(name)
-                    Party.Tribe.add_to_popup(1302, name)
+                    Party.Tribe.add_to_popup(4002, name) # was born
                     self._log(name + ' was born.')
                 else:
-                    Party.Tribe.add_to_popup(1201, '')
+                    Party.Tribe.add_to_popup(3001, '') #Population is not healthy enough to give a new life
                     self._log('Population is not healthy enough to give a new life.')
             else:
-                Party.Tribe.add_to_popup(1202, '')
+                Party.Tribe.add_to_popup(3002, '') #Population limit is reached
                 self._log('Population limit is reached.')
         elif 'heal' in Party.purpose:
             for man in Party.members:
                 man.heal()
-                Party.Tribe.add_to_popup(1303, man.name)
+                Party.Tribe.add_to_popup(4003, man.name) # got rest and healed
             self._log(str(len(Party.members))+ ' tribesmen were cured for 1 point each.')
         if 'skin' in Party.purpose:
             amount = self._calculate_total_points(Party) // 4
             rest = Party.Tribe.consume_resource(MOIST_SKIN,amount)
             result = amount-rest
             Party.Tribe.add_resource(SKIN, result)
-            Party.Tribe.add_to_popup(1304, result)
+            Party.Tribe.add_to_popup(4004, result) # peaces of skin are dressed
             self._log(str(result) + ' peaces of skin are dressed.')
 
         return None
@@ -203,21 +203,21 @@ class Rules:
         If tribesmen point amount is 0 - he dies.
         '''
         feed = len(Tribe.population)
-        Tribe.add_to_popup(1305, feed)
+        Tribe.add_to_popup(4005, feed)  # food are required for feeding
         self._log(str(feed) + ' food are required for feeding.')
         feed = self.reduce_food(Tribe,feed)
         if feed == 0:
             return None
 
-        Tribe.add_to_popup(1203, feed)
-        Tribe.add_to_popup(1306, feed)
+        Tribe.add_to_popup(3003, feed) #Available food amount is not enough
+        Tribe.add_to_popup(4006, feed) # stocked food are required
         self._log('Available food was not enough and '+ str(feed) +
                     ' stocked food are required.')
         feed = self.reduce_stocked_food(Tribe,feed)
 
         if feed == 0:
             return None
-        Tribe.add_to_popup(1204, feed)
+        Tribe.add_to_popup(3004, feed) #Food stock is empty and your people suffer from hunger
         self._log('Stock is empty. Deficit is '+ str(feed) + ' food.')
         Tribe.print_points()
         self.population_damage(Tribe.population,feed)

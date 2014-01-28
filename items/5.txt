@@ -1,8 +1,0 @@
-name=2009
-type=weapon
-points=3,4,5
-durability=80
-consumable=0
-description=2010
-ingredients=2:1,4:1,points:7
-amount=1

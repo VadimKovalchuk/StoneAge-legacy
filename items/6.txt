@@ -1,8 +1,0 @@
-name=2011
-type=weapon
-points=4,5
-durability=100
-consumable=0
-description=2012
-ingredients=stone:1,wood:1,points:8
-amount=1

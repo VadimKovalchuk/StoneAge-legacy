@@ -1,4 +1,4 @@
-import glob
+import sqlite3
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -8,14 +8,12 @@ constants = tools.importConstants()
 '''___________________________________________________________'''
 #Active language
 LANGUAGE        = constants['LANGUAGE']
-#Game directories
-CONTROLS_DIR    = constants['CONTROLS_DIR']    #Default is 'controls\\'
-TXT_SUBFOLDER   = constants['TXT_SUBFOLDER']   #Default is 'text\\'
+DB_DIR = 'database\\'
 del constants
 
 POPUP_ORDER ={
-    'daily':    [1101,1301,1304,1303,1302,1201,1202],
-    'nightly':  [1305,1203,1306,1204]
+    'daily':    [2001,4001,4004,4003,4002,3001,3002],
+    'nightly':  [4005,3003,4006,3004]
 }
 '''___________________________________________________________'''
 
@@ -31,41 +29,18 @@ class TextProcessor:
         self.controls = None
         self.translate_required = False
         self.translate = {}
-
-        #Build basic controls table
-        file_name = CONTROLS_DIR + TXT_SUBFOLDER + CONTROLS_DIR[:-1] + \
-                    '_' + LANGUAGE + '.txt'
-        self.controls = self._built_table(file_name)
-        #print(self.controls)
+        db = sqlite3.connect(DB_DIR + 'core.db')
+        self.db_cursor = db.cursor()
 
         #buliding translate table if language is other than english
         if LANGUAGE != 'EN':
             self.translate_required = True
-            file_name = CONTROLS_DIR + TXT_SUBFOLDER + CONTROLS_DIR[:-1] + \
-                        '_' + 'EN' + '.txt'
-            temp = self._built_table(file_name)
-            for key in self.controls:
-                if key > 1000:
-                    break
-                self.translate[temp[key]] = self.controls[key]
+            self.db_cursor.execute('SELECT en,' + LANGUAGE +\
+                                   ' FROM controls WHERE id > 0 and id <= 1000')
+            for row in self.db_cursor.fetchall():
+                self.translate[row[0]] = row[1]
 
         return None
-
-    def _built_table(self,file_name):
-        '''
-        (str) -> dict
-
-        Builds text dictionary from the file.
-        '''
-        result_dict = {}
-        file = open(file_name,'r')
-        for line in file:
-            assert ':' in line, \
-                   'Incorrect text file syntax(":" character is missing)'
-            [key, value] = line.split(':')
-            result_dict[int(key)] = value[:-1]
-
-        return result_dict
 
     def get_txt(self, table, id):
         '''
@@ -73,12 +48,13 @@ class TextProcessor:
 
         Get text with passed ID from table.
         '''
-        if table == 'controls':
-            tab = self.controls
-        else:
-            assert False, 'Invalid table parameter passed to text processor.'
-        if id in tab:
-            return tab[id]
+        assert table in ('controls','items'), \
+            'Invalid table parameter passed to text processor.'
+        self.db_cursor.execute('SELECT ' + LANGUAGE + ' FROM ' + table +\
+                               ' WHERE id =' + str(id))
+        row = self.db_cursor.fetchone()
+        if row:
+            return row[0]
         else:
             return 'INVALID TEXT ID'
 
@@ -142,11 +118,11 @@ class TextProcessor:
         else:
             arg_str = str(sum(arguments))
 
-        if 1101 <= message_id < 1200:
+        if 2001 <= message_id < 3000:
             return self.get_txt('controls', message_id) + arg_str + '.\n'
-        elif 1201 <= message_id < 1300:
+        elif 3001 <= message_id < 4000:
             return self.get_txt('controls', message_id) + '.\n'
-        elif 1301 <= message_id < 1400:
+        elif 4001 <= message_id < 5000:
             return arg_str + self.get_txt('controls', message_id) + '.\n'
         else:
             return 'INCORRECT MESSAGE ID'

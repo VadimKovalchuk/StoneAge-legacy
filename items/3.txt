@@ -1,8 +1,0 @@
-name=2005
-type=weapon
-points=2,3,4
-durability=60
-consumable=0
-description=2006
-ingredients=1:1,2:1,points:5
-amount=1

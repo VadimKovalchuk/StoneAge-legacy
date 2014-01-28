@@ -1,8 +1,0 @@
-name=2013
-type=weapon
-points=5
-durability=100
-consumable=0
-description=2014
-ingredients=6:1,stone:1,points:10
-amount=1

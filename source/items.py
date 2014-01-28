@@ -1,7 +1,8 @@
 from source import tools
-import random
+import random, sqlite3
 
 ITEMS_DIR = 'items\\'
+DB_DIR = 'database\\'
 
 class Item:
     """ All kinds of goods that can be worn, dressed or carried by tribesmen """
@@ -14,88 +15,57 @@ class Item:
         created item with default values. if some parameters are passed -
         assigns them.
         '''
-        self.validate_item_file(id)
-        item_file = self.import_item(id)
+        item = self._import_item_db(id)
         self.id = id                        #item id
         self.owner = None                   #Item owner
-        self.name = item_file['name']       #Item name
-        self.type = item_file['type']       #Item type
-        self.points = item_file['points']   #e.g. amount of damage for weapon or armor for wear.
-        self.durability = item_file['durability']   #Damage amount that can be dealt or taken by item.
-        self.consumable = item_file['consumable']   #Consumable item list that required for item usage.
-        self.amount = item_file['amount']           #Consumable items and ingredients can be stacked.
-        self.description = item_file['description'] #Item description for tech tree and workshop.
-        self.ingredients = item_file['ingredients'] #Ingredients that required for item creation.
+        self.name = item['name']            #Item name
+        self.type = item['type']            #Item type
+        self.points = item['points']        #e.g. amount of damage for weapon or armor for wear.
+        self.durability = item['durability']#Damage amount that can be dealt or taken by item.
+        self.consumable = item['consumable']#Consumable item list that required for item usage.
+        self.amount = item['amount']        #Consumable items and ingredients can be stacked.
+        self.description = item['description']#Item description for tech tree and workshop.
+        self.ingredients = item['ingredients']#Ingredients that required for item creation.
 
         return None
 
-    def validate_item_file(self, id):
-        '''
-        (int) -> None
-
-        Validates item file that corresponds to item id and returns true
-        if file is OK.
-        '''
-        id = str(id)
-        assert tools.file_exists(ITEMS_DIR,id + '.txt'), 'Invalid item ID'
-        file = open(ITEMS_DIR + str(id) + '.txt','r')
-        for line in file:
-            assert '=' in line, \
-                'Mandatory character "=" not found in item file:' + id
-            key,value = line[:-1].split('=')
-            assert key in ('name','type','points','durability','description',
-                           'consumable','ingredients','amount'),\
-                'Incorrect item parameter found in item file:' + id
-            if key in ('name','durability','description','amount'):
-                assert value.isnumeric(), \
-                    'Incorrect parameter value in item file:' + id
-            elif key in ('points','consumable'):
-                param_list = value.split(',')
-                for item in param_list:
-                    assert item.isnumeric(),\
-                        'Incorrect "points" parameter in item file:' + id
-            elif key == 'ingredients':
-                ingredients_list = value.split(',')
-                for ingredient in ingredients_list:
-                    name,amount = ingredient.split(':')
-                    assert amount.isnumeric(), 'Space  found in item file:' + id
-        file.close()
-
-        return None
-
-    def import_item(self,id):
+    def _import_item_db(self,id):
         '''
         (int) -> dict
 
         Returns dictionary where field name is a key and field value is the one.
         '''
         id = str(id)
-        item_dict = {}
-        file = open(ITEMS_DIR + str(id) + '.txt','r')
-        for line in file:
-            key,value = line[:-1].split('=')
-            if key in ('name','durability','description','amount'):
-                value = int(value)
-            elif key in ('points','consumable'):
-                if key == 'consumable' and value == '0':
-                    value = False
-                else:
-                    param_list = value.split(',')
-                    value = []
-                    for item in param_list:
-                        value.append(int(item))
-            elif key == 'ingredients':
-                ingredients_list = value.split(',')
-                value = {}
-                for ingredient in ingredients_list:
-                    name,amount = ingredient.split(':')
-                    if name.isnumeric():
-                        name = int(name)
-                    value[name] = int(amount)
+        db = sqlite3.connect(DB_DIR + 'core.db')
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM items WHERE id =' + str(id))
+        row = cursor.fetchone()
+        db.close()
+        result = {}
+        result['name']= row[1]
+        result['type'] = row[2]
+        result['points'] = [i for i in range(row[3],row[4] + 1)]
+        result['durability'] = row[5]
+        if row[6]:
+            param_list = row[6].split(',')
+            value = []
+            for item in param_list:
+                value.append(int(item))
+            result['consumable'] = value
+        else:
+            result['consumable'] = None
+        result['description'] = row[7]
+        ingredients_list = row[8].split(',')
+        result['ingredients'] = {}
+        for ingredient in ingredients_list:
+            name,amount = ingredient.split(':')
+            if name.isnumeric():
+                name = int(name)
+            result['ingredients'][name] = int(amount)
+        result['amount'] = row[9]
 
-            item_dict[key] = value
-        file.close()
-        return  item_dict
+        return  result
+
 
     def __str__(self):
 

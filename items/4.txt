@@ -1,8 +1,0 @@
-name=2007
-type=weapon
-points=2
-durability=40
-consumable=0
-description=2008
-ingredients='stone':1,points:5
-amount=1
