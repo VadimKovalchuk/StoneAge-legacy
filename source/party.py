@@ -69,6 +69,8 @@ class Party:
                 self.limits = {'min': 2, 'max': 2}
             elif 'heal' in self.purpose:
                 self.limits = {'min': 1, 'max': 15}
+            elif 'skill':
+                pass
             else: assert False, 'Incorrect party command for tribe functionality'
         else: assert False, 'Incorrect party command type'
 

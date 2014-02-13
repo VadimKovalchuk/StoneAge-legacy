@@ -24,7 +24,7 @@ class Item:
         self.durability = item['durability']#Damage amount that can be dealt or taken by item.
         self.consumable = item['consumable']#Consumable item list that required for item usage.
         self.amount = item['amount']        #Consumable items and ingredients can be stacked.
-        self.description = item['description']#Item description for tech tree and workshop.
+        self.description = item['description']#Item description for skill tree and workshop.
         self.ingredients = item['ingredients']#Ingredients that required for item creation.
 
         return None

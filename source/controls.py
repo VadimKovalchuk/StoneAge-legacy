@@ -35,6 +35,12 @@ LINE_WIDTH = 2
 FIRST_TEXT_COLUMN = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
 SECOND_BUTTON_COLUMN = int(BUTTON_SIZE *2.5)
 SECOND_TEXT_COLUMN = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
+MENU_COLUMNS = [(0,BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *1.1),BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *2.2),BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *3.3),BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *4.4),BUTTON_SIZE // 3),
+               (int(SIDE_PANEL_WIDTH - LINE_WIDTH * 8 - BUTTON_SIZE),BUTTON_SIZE // 3)]
 
 #Buttons
 SUBMODE = 'submode'
@@ -44,10 +50,12 @@ PROCESS_MAN =  'process_man'
 PROCESS_FOOD = 'process_food'
 PROCESS_SKIN = 'process_skin'
 PROCESS_HEAL = 'process_heal'
+PROCESS_SKILL = 'process_skill'
 GET_FOOD = 'get_food'
 GET_HUNT = 'get_hunt'
 GET_WOOD = 'get_wood'
 GET_STONE = 'get_stone'
+SKILLS_MENU = 'skills_menu'
 FORM_PARTY = [PROCESS_MAN, PROCESS_FOOD, PROCESS_SKIN,PROCESS_HEAL,
               GET_FOOD, GET_HUNT, GET_WOOD, GET_STONE]
 #Popup
@@ -99,16 +107,8 @@ class Controls:
             'food': 'apple',
             'wood': 'wood',
             'stone':'stone',
-            'hunt': 'meat'
-        }
-        self.weapon_image_for = {
-            'unarmed':      'unarmed_button',
-            'bone_knife':   'bone_knife_button',
-            'spear':        'spear_button',
-            'bone_spear':   'bone_spear_button',
-            'stone_spear':  'stone_spear_button',
-            'stone_hammer':  'stone_hammer_button',
-            'stone_axe':    'stone_axe_button'
+            'hunt': 'meat',
+            'bones': 'bone'
         }
         self.armor_image_for = {
             'undressed':     'undressed_button',
@@ -129,7 +129,8 @@ class Controls:
         '''
         (None) -> None
         '''
-        if self.update or self.Core.update or self.Tribe != self.Core.active_tribe:
+        if self.update or self.Core.update or self.Core.raise_popup \
+            or self.Tribe != self.Core.active_tribe:
             self._blit_all()
 
         return None
@@ -154,9 +155,10 @@ class Controls:
             self._party_builder_menu()
         elif self.menu_mode == 'popup':
             self._blit_popup()
+        elif self.menu_mode == SKILLS_MENU:
+            self._blit_skills_menu()
         else:
             assert False, 'Incorrect menu mode'
-
         self.update = False
         self.Core.update = False
 
@@ -187,7 +189,7 @@ class Controls:
 
         Verifies if popup is required and prepares data for display.
         '''
-        if self.menu_mode == 'general' and self.Core.check_popups():
+        if self.Core.check_popups():
             self.menu_mode = POPUP
             #For which object popup should be raised
             for tribe in self.Core.tribes:
@@ -259,7 +261,7 @@ class Controls:
                         'header', FIRST_TEXT_COLUMN)
         self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
         self._blit_button('inventory',PROCESS_FOOD,
-                            offset=SECOND_TEXT_COLUMN[0])
+                            MENU_COLUMNS[-1][0])
         self._next_line()
 
         self._blit_icon('meat')
@@ -277,7 +279,7 @@ class Controls:
                         'header', FIRST_TEXT_COLUMN)
         self._blit_button('workshop',PROCESS_FOOD,
                             offset=SECOND_BUTTON_COLUMN)
-        #self._blit_icon('item6',SECOND_TEXT_COLUMN[0])
+        #self._blit_icon('question',SECOND_TEXT_COLUMN[0])
         self._next_line()
 
         self._blit_icon('moist_skin')
@@ -298,6 +300,7 @@ class Controls:
         self._blit_icon('stone')
         self._blit_text('x ' + str(self.Tribe.get_resource('stone')),
                         'header', FIRST_TEXT_COLUMN)
+        self._blit_button('wheel',SKILLS_MENU,offset=SECOND_BUTTON_COLUMN)
         self._next_line()
 
         self._compleate_menu()
@@ -383,8 +386,7 @@ class Controls:
         self._blit_delimiter()
         self._blit_button('yes', YES)
         _submode_switch_button()
-        offset = SIDE_PANEL_WIDTH - BUTTON_SIZE - LINE_WIDTH * 8
-        self._blit_button('no', NO, offset)
+        self._blit_button('no', NO, MENU_COLUMNS[-1][0])
         self._next_line()
 
         self._compleate_menu()
@@ -420,11 +422,21 @@ class Controls:
 
             return None
 
+        def _popup_pic():
+            '''
+            (None) -> str
+
+            Gets picture that should be blited for current popup.
+            '''
+            if 'picture' in self.popup_obj.popup:
+                return self.popup_obj.popup['picture']
+            else:
+                return self.popup_obj.popup['type'][0]
+
         self.pause = True
         self.ScreenSurface.blit(self.Loader.get('background','popup'),
                                 POPUP_RECT)
-        popup_type = self.popup_obj.popup['type'][0]
-        self.ScreenSurface.blit(self.Loader.get(POPUP,popup_type),POPUP_PIC)
+        self.ScreenSurface.blit(self.Loader.get(POPUP,_popup_pic()),POPUP_PIC)
         popup_text = self.Txt.popup(self.popup_obj)
         _blit_popup_text(popup_text,1)
         # Popup button
@@ -437,7 +449,142 @@ class Controls:
 
         return None
 
+    def _blit_skills_menu(self):
+        '''
+        (None) -> None
 
+        Blits Skills Menu.
+        '''
+        def _command_handler():
+            '''
+            (None) -> None
+
+            Handles called method and changes Skill menu content according to it
+            '''
+            if 'skill' in self.called_method:
+                if 'info' in self.called_method:
+                    skill_id = int(self.called_method[-3:])
+                    self.Core.popup = {'type':['skill_info'],
+                                       'skill':skill_id,
+                                       'picture':'skill' + str(skill_id)}
+                    self.Core.raise_popup = True
+                    self.Core.update = True
+                    self.update = True
+                elif self.called_method[-3:].isnumeric():
+                    skill_id = int(self.called_method[-3:])
+                    for skill in self.Tribe.SkillTree.available_skills:
+                        if skill.id == skill_id:
+                            self.Tribe.SkillTree.learned = skill
+                            break
+
+            return None
+
+        def _number_to_str(number):
+            '''
+            (int) -> str
+
+            Transform number in range 0..999 into string but always with three digits.
+            '''
+            if number < 10:
+                return '00' + str(number)
+            elif number < 100:
+                return '0' + str(number)
+            else:
+                return str(number)
+
+        def _blit_requirements(skill,req):
+            '''
+            (Skill, dict) -> None
+
+            Blits Skill as an icon and requirements for its study. Help button
+            is also added for Skill.
+            '''
+            self._blit_icon('skill' + str(skill.id))
+            self._blit_icon(self.cell_image_for[req['resource']],
+                            MENU_COLUMNS[1][0])
+            txt = str(req['obtained']) + '/' + str(req['required'])
+            self._blit_text(txt,'header',MENU_COLUMNS[2])
+
+
+            return None
+
+        def _blit_ready(skill):
+            '''
+            (Skill) -> None
+
+            Blits Skill as a button when required experience is gained.
+            '''
+            self._blit_button('skill' + str(skill.id), 'skill' + _number_to_str(skill.id))
+            return None
+
+        def _blit_selected(skill):
+            '''
+            (Skill) -> None
+
+            Blits selected Skill separately as an icon and its price.
+            '''
+            self._blit_icon('skill' + str(skill.id))
+            price = skill.get_price()
+            counter = 0
+            for resource in price:
+                self._blit_icon(self.cell_image_for[resource],
+                                MENU_COLUMNS[counter * 2 + 1][0])
+                self._blit_text('x' + str(price[resource]),'header',
+                                MENU_COLUMNS[counter * 2 + 2])
+                counter += 1
+                if counter > 1:
+                    self._next_line()
+                    counter = 0
+
+            return None
+
+        def _yes_conditions():
+            '''
+            (None) -> None
+
+            Verifies conditions for YES button to blit. If conditions are
+            not satisfied blits grayed out YES icon.
+            '''
+            if self.Tribe.SkillTree.learned.affordable() and \
+                    len(self.Tribe.get_free_tribesmen()) == len(self.Tribe.population):
+                self._blit_button(YES,YES)
+            else:
+                if len(self.Tribe.get_free_tribesmen()) < len(self.Tribe.population):
+                    self._blit_text(self.Txt.get_txt('controls',1006))
+                    #Whole tribe is required
+                else:
+                    self._blit_text(self.Txt.get_txt('controls',1005))
+                    #insufficien resource
+                self._next_line(self.HeaderText.get_height())
+                self._blit_icon('grayed_yes')
+            return None
+
+        _command_handler()
+        self._prepare_menu()
+        self._blit_text(self.Txt.get_txt('controls', 1004)) #Available skills
+        self._next_line(self.HeaderText.get_height())
+        for skill in self.Tribe.SkillTree.available_skills:
+            experience = skill.get_exp()
+            self._blit_button('question','skill_info_' + _number_to_str(skill.id),
+                              MENU_COLUMNS[-1][0])
+            if experience == 'done':
+                _blit_ready(skill)
+                self._blit_icon(YES,MENU_COLUMNS[1][0])
+            else:
+                _blit_requirements(skill,experience)
+            self._next_line()
+
+        self._blit_delimiter()
+        if self.Tribe.SkillTree.learned:
+            _blit_selected(self.Tribe.SkillTree.learned)
+            self._next_line()
+            _yes_conditions()
+        self._blit_button(NO,NO,MENU_COLUMNS[5][0])
+        self._next_line()
+
+        self._compleate_menu()
+
+        return None
 
     def _blit_frame(self, x, y, width, height):
         '''
@@ -478,7 +625,7 @@ class Controls:
 
         return None
 
-    def _blit_text(self, text, type, offset = (0,0),
+    def _blit_text(self, text, type = 'regular', offset = (0,0),
                    bold = False, coordinates = None):
         '''
         (self, str, (int, int), (int, int), bool) -> NoneType
@@ -687,7 +834,7 @@ class Controls:
                 '''
                 (None) -> None
 
-                Clicking yes for popup menu.
+                Clicking yes in popup menu.
                 Clears screen from popup and disable pause.
                 '''
                 self.menu_mode = 'general'
@@ -699,11 +846,27 @@ class Controls:
                         self.Core.map[x][y].blit_markers(self.ScreenSurface)
                 return None
 
+            def _yes_for_skills():
+                '''
+                (None) -> None
+
+                Clicking yes in popup menu.
+                Passes Skill ID for Skill that mastered.
+                '''
+                Party = party.Party(self.Tribe, self.selected.cell,PROCESS_SKILL,
+                                     self.Tribe.get_free_tribesmen())
+                self.Tribe.parties.append(Party)
+                self.Tribe.build_send_query()
+                self.menu_mode = 'general'
+                return None
+
             if self.menu_mode == 'party_builder' and\
                     not self.Party.is_valid(self.Tribe):
                 _yes_for_party()
             elif self.menu_mode == 'popup':
                 _yes_for_popup()
+            elif self.menu_mode == SKILLS_MENU:
+                _yes_for_skills()
 
             return None
 
@@ -725,8 +888,21 @@ class Controls:
                 self.menu_mode = 'general'
                 return None
 
+            def _no_for_skills():
+                '''
+                (None) -> None
+
+                Clicking no for skills menu.
+                Deletes draft party instance.
+                '''
+                self.menu_mode = 'general'
+                self.Tribe.SkillTree.learned = None
+                return None
+
             if self.menu_mode == 'party_builder':
                 _no_for_party()
+            elif self.menu_mode == SKILLS_MENU:
+                _no_for_skills()
 
             return None
 
@@ -756,6 +932,16 @@ class Controls:
 
             return None
 
+        def _skills_menu():
+            '''
+            (None) -> None
+
+            Switches controls to display Skills menu.
+            '''
+            self.menu_mode = SKILLS_MENU
+
+            return None
+
         def _print_parties():
             '''
             (None) -> None
@@ -780,6 +966,8 @@ class Controls:
                         _no_handler()
                     elif self.called_method == SUBMODE:
                         _switch_submode()
+                    elif self.called_method == SKILLS_MENU:
+                        _skills_menu()
 
         else:
             if self.menu_mode == 'general':

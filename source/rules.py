@@ -162,7 +162,6 @@ class Rules:
             Party.Tribe.add_resource(STOCKED_FOOD, stocked)
             Party.Tribe.add_to_popup(4001, stocked) # food are stocked
             self._log(str(stocked) + ' food are stocked.')
-
         elif 'man' in Party.purpose:
             Tribe = Party.Tribe
             man = Party.members[0]
@@ -184,13 +183,25 @@ class Rules:
                 man.heal()
                 Party.Tribe.add_to_popup(4003, man.name) # got rest and healed
             self._log(str(len(Party.members))+ ' tribesmen were cured for 1 point each.')
-        if 'skin' in Party.purpose:
+        elif 'skin' in Party.purpose:
             amount = self._calculate_total_points(Party) // 4
             rest = Party.Tribe.consume_resource(MOIST_SKIN,amount)
             result = amount-rest
             Party.Tribe.add_resource(SKIN, result)
             Party.Tribe.add_to_popup(4004, result) # peaces of skin are dressed
             self._log(str(result) + ' peaces of skin are dressed.')
+        elif 'skill' in Party.purpose:
+            skill = Party.Tribe.SkillTree.learned
+            price = skill.get_price()
+            for resource in price:
+                if resource.isnumeric():
+                    pass #Will be compleate after Workshop implementation
+                else:
+                    Party.Tribe.consume_resource(resource,price[resource])
+            Party.Tribe.SkillTree.master_skill()
+            Party.Tribe.popup = {'type':['skill_done'],'skill':skill.id,
+                                       'picture':'skill' + str(skill.id)}
+            Party.Tribe.SkillTree.learned = None
 
         return None
 
@@ -254,10 +265,12 @@ class Rules:
                 pass
             elif reduced // 2 > hidden_bones_list[i]:
                 Tribe.resources[BONES] += hidden_bones_list[i]
+                Tribe.add_statistics(BONES,hidden_bones_list[i])
                 hidden_bones_list[i] = 0
             else:
                 hidden_bones_list[i] -= reduced // 2
                 Tribe.resources[BONES] += reduced //2
+                Tribe.add_statistics(BONES,reduced //2)
 
             if rest ==0:
                 return 0

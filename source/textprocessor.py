@@ -1,4 +1,5 @@
 import sqlite3
+from source import skilltree
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -86,14 +87,26 @@ class TextProcessor:
         del message_dict['type']
         text = ''
 
-        for message_id in POPUP_ORDER[popup_type]:
-            if message_id in message_dict:
-                text += self._gen_popup_text(message_id,message_dict[message_id])
-                del message_dict[message_id]
-        if 'hunt' in text:
-            text = text.replace('hunt','wildfowl')
-        text = self.translator(text)
+        if popup_type in POPUP_ORDER.keys():
+            for message_id in POPUP_ORDER[popup_type]:
+                if message_id in message_dict:
+                    text += self._gen_popup_text(message_id,message_dict[message_id])
+                    del message_dict[message_id]
+            if 'hunt' in text:
+                text = text.replace('hunt','wildfowl')
+            text = self.translator(text)
+        elif 'skill' in popup_type:
+            assert 'skill' in message_dict, 'Popup for Skill is called, but ID is not passed.'
+            skill = skilltree.Skill(None,message_dict['skill'])
+            text += self.get_txt('controls', skill.name) + '.\n'
+            if 'info' in popup_type:
+                text += self.get_txt('controls', skill.description) + '.\n'
+            elif 'done' in popup_type:
+                text += self.get_txt('controls', skill.learned) + '.\n'
+            else:
+                assert False, 'Incorrect Skill popup parameter:' + popup_type
 
+        obj.popup = {}
         obj.raise_popup = False
         text = self._fit_length(text)
         #print(popup_type.capitalize() + ' popup:\n' + text)

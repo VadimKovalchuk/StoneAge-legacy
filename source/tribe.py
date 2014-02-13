@@ -1,6 +1,7 @@
 import pygame
 from source import tribesman
 from source import ai
+from source import skilltree
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -45,6 +46,8 @@ class Tribe:
         self.Core = Core
         self.home_cell = LandCell
         self.population = []
+        self.inventory = []
+        self.statistics = {}
         self.parties = []
         self.send_query = []
         self.ready = False
@@ -54,6 +57,7 @@ class Tribe:
         self.meeple_sprite = Loader.get(SPRITE,'player_walk')
         self.player_type = player
         self.AI = ai.Ai(self)
+        self.SkillTree = skilltree.SkillTree(self)
         self.resources = {
             FOOD:        [0,0,0],
             STOCKED_FOOD:[0,0,0,0,0,0,0,0,0],
@@ -257,12 +261,31 @@ class Tribe:
         '''
         if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONES):
             self.resources[type][0] += amount
+            self.add_statistics(type, amount)
         elif type == 'hunt':
+            self.add_statistics('hunt', amount)
             self.resources[FOOD][0] += amount
+            self.add_statistics(FOOD, amount)
             self.resources[HIDDEN_BONES][0] += amount // 2
             self.resources[MOIST_SKIN][0] += amount // 4
+            self.add_statistics(MOIST_SKIN, amount // 4)
         else:
             self.resources[type] += amount
+            self.add_statistics(type, amount)
+        return None
+
+    def add_statistics(self, stat_parameter, amount):
+        '''
+        (str, int) -> None
+
+        Adds amount to statistics parameter. If statistics parameter is
+        new - adds it.
+        '''
+        if stat_parameter in self.statistics:
+            self.statistics[stat_parameter] += amount
+        else:
+            self.statistics[stat_parameter] = amount
+
         return None
 
     def consume_resource(self, type, amount):
@@ -345,7 +368,7 @@ class Tribe:
 
         return None
 
-    def _finalize_popup(self, type):
+    def _finalize_popup(self, type = None):
         '''
         (str) -> None
 
@@ -353,7 +376,8 @@ class Tribe:
         for popup display.
         '''
         if self.player_type == 'player':
-            self.add_to_popup('type', type)
+            if 'type' not in self.popup:
+                self.add_to_popup('type', type)
             self.raise_popup = True
         else:
             self.popup = {}

@@ -144,7 +144,7 @@ class Loader:
                 color_key = (0,0,0,255)
             else:
                 color_key = (255,255,255,255)
-            path = CONTROLS_DIR + ICONS_DIR
+            path = ICONS_DIR
             if tools.file_exists(path, img_name + '.png'):
                 filename = path + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
@@ -192,9 +192,9 @@ class Loader:
             returns True. Otherwise returns False. No scaling is applied
             '''
             if location == BACKGROUND:
-                directory = CONTROLS_DIR + BACKGROUNDS_DIR
+                directory = BACKGROUNDS_DIR
             elif location == POPUP:
-                directory = CONTROLS_DIR + POPUPS_DIR
+                directory = POPUPS_DIR
 
             if tools.file_exists(directory, img_name + '.png'):
                 filename = directory + img_name + '.png'
@@ -248,8 +248,8 @@ class Loader:
             If marker exists in 'marker' directory - loads it and
             returns True. Otherwise returns False.
             '''
-            if tools.file_exists(CONTROLS_DIR + MARKERS_DIR, img_name + '.png'):
-                filename = CONTROLS_DIR + MARKERS_DIR + img_name + '.png'
+            if tools.file_exists(MARKERS_DIR, img_name + '.png'):
+                filename = MARKERS_DIR + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
                 self.cash[MARKER][img_name] = pygame.transform.\
                     scale(processed_image,(LAND_CELL_WIDTH, LAND_CELL_HEIGHT))
