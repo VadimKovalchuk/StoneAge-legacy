@@ -2,12 +2,11 @@ import sys
 import pygame
 from pygame.locals import *
 
-
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import core, controls, scenario, loader, tools, items
 
-constants = tools.importConstants()
+constants = tools.Constants()
 '___________________________________________________________'
 #Set up window resolution
 WINDOW_WIDTH    = constants['WINDOW_WIDTH']     #Default 1280
@@ -26,6 +25,8 @@ del constants
 '___________________________________________________________'
 
 def main():
+
+    tools.db_backup()
     # set up pygame
     pygame.init()
     ScreenSurface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), 0, 32)
@@ -65,7 +66,7 @@ def main():
         Tribe.add_tribesman("Nurg")
         Tribe.add_tribesman("Pela")'''
         for i in range(1,6):
-            Tribe.population[i - 1].add_item(items.Item(i + 2))
+            Tribe.population[i - 1].add_item(items.Item(7))#i + 2
         Tribe.name = tribe_name[count]
         count += 1
 

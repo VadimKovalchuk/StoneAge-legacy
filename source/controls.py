@@ -1,10 +1,10 @@
-import pygame
+import pygame, sqlite3
 
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import tools, party
 
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Set up window resolution
 WINDOW_WIDTH    = constants['WINDOW_WIDTH']     #Default 1280
@@ -27,6 +27,17 @@ LOW = constants['LOW']          #Default is 'low'
 MODERATE = constants['MODERATE']#Default is 'moderate'
 MANY = constants['MANY']        #Default is 'many'
 RICH = constants['RICH']        #Default is 'rich'
+#Resource types
+FOOD =          constants['FOOD']        #Default is 'food'
+STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'
+BONES =         constants['BONES']       #Default is 'bones'
+HIDDEN_BONES =  constants['HIDDEN_BONES']#Default is 'hidden_bones'
+MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
+SKIN =          constants['SKIN']        #Default is 'skin'
+WOOD =          constants['WOOD']        #Default is 'wood'
+STONE =         constants['STONE']       #Default is 'stone'
+#Dirrectories
+DB_DIR = constants['DB_DIR']
 
 del constants
 
@@ -36,11 +47,11 @@ FIRST_TEXT_COLUMN = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
 SECOND_BUTTON_COLUMN = int(BUTTON_SIZE *2.5)
 SECOND_TEXT_COLUMN = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
 MENU_COLUMNS = [(0,BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *1.1),BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *2.2),BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *3.3),BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *4.4),BUTTON_SIZE // 3),
-               (int(SIDE_PANEL_WIDTH - LINE_WIDTH * 8 - BUTTON_SIZE),BUTTON_SIZE // 3)]
+               (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *2.2), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *3.3), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *4.4), BUTTON_SIZE // 3),
+               (int(SIDE_PANEL_WIDTH - LINE_WIDTH * 8 - BUTTON_SIZE), BUTTON_SIZE // 3)]
 
 #Buttons
 SUBMODE = 'submode'
@@ -92,6 +103,7 @@ class Controls:
         self.Party = None
         self.party_list = []
         self.free_list = []
+        self.image = Image() #Picture aliases
 
         #Internal variables
         self.HeaderText = pygame.font.SysFont(None, 24)
@@ -110,18 +122,11 @@ class Controls:
             'hunt': 'meat',
             'bones': 'bone'
         }
-        self.armor_image_for = {
-            'undressed':     'undressed_button',
-            'light_leather': 'light_leather_button',
-            'medium_leather':'medium_leather_button',
-            'heavy_leather': 'heavy_leather_button',
-            'bone_armor':    'bone_armor_button'
-        }
-        self.menu_line = [WINDOW_WIDTH - SIDE_PANEL_WIDTH + \
-                                    LINE_WIDTH * 4, LINE_WIDTH * 4]
+
+        self.menu_line = [WINDOW_WIDTH - SIDE_PANEL_WIDTH +LINE_WIDTH * 4,
+                          LINE_WIDTH * 4]
         self.block_topleft = [0,0]
         self.block_height = 0
-        
 
         return None
 
@@ -217,11 +222,11 @@ class Controls:
                 if self.selected.resources[resource] == 0:
                     continue
                 # Blits button which creates the party for specific resource
-                self._blit_button(self.cell_image_for[resource],'get_' + resource)
+                self._blit_button('cell_' + resource,'get_' + resource)
 
                 # Blits resource richness
                 richness = self.selected.richness(resource)
-                self._blit_icon(self.richness_image_for[richness],FIRST_TEXT_COLUMN[0])
+                self._blit_icon(richness,FIRST_TEXT_COLUMN[0])
 
                 #Blits resource cost
                 cost_table = self.Core.Rules.resource_cost_matrix
@@ -260,45 +265,45 @@ class Controls:
         self._blit_text('x ' + str(len(self.Tribe.population)),
                         'header', FIRST_TEXT_COLUMN)
         self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
-        self._blit_button('inventory',PROCESS_FOOD,
-                            MENU_COLUMNS[-1][0])
+        #self._blit_button('inventory',PROCESS_FOOD,
+        #                    MENU_COLUMNS[-1][0])
         self._next_line()
 
-        self._blit_icon('meat')
-        self._blit_text('x ' + str(self.Tribe.get_resource('food')),
+        self._blit_icon(FOOD)
+        self._blit_text('x ' + str(self.Tribe.get_resource(FOOD)),
                         'header', FIRST_TEXT_COLUMN)
 
-        self._blit_button('stocked',PROCESS_FOOD,
+        self._blit_button(STOCKED_FOOD,PROCESS_FOOD,
                             offset=SECOND_BUTTON_COLUMN)
-        self._blit_text('x ' + str(self.Tribe.get_resource('stocked_food')),
+        self._blit_text('x ' + str(self.Tribe.get_resource(STOCKED_FOOD)),
                         'header', SECOND_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('bone')
-        self._blit_text('x ' + str(self.Tribe.get_resource('bones')),
+        self._blit_icon(BONES)
+        self._blit_text('x ' + str(self.Tribe.get_resource(BONES)),
                         'header', FIRST_TEXT_COLUMN)
-        self._blit_button('workshop',PROCESS_FOOD,
-                            offset=SECOND_BUTTON_COLUMN)
-        #self._blit_icon('question',SECOND_TEXT_COLUMN[0])
+        #self._blit_button('workshop',PROCESS_FOOD,
+        #                    offset=SECOND_BUTTON_COLUMN)
+        #self._blit_icon(STOCKED_FOOD, SECOND_TEXT_COLUMN[0])
         self._next_line()
 
-        self._blit_icon('moist_skin')
-        self._blit_text('x ' + str(self.Tribe.get_resource('moist_skin')),
+        self._blit_icon(MOIST_SKIN)
+        self._blit_text('x ' + str(self.Tribe.get_resource(MOIST_SKIN)),
                         'header', FIRST_TEXT_COLUMN)
 
-        self._blit_button('skin',PROCESS_SKIN,
+        self._blit_button(SKIN,PROCESS_SKIN,
                             offset=SECOND_BUTTON_COLUMN)
-        self._blit_text('x ' + str(self.Tribe.get_resource('skin')),
+        self._blit_text('x ' + str(self.Tribe.get_resource(SKIN)),
                         'header', SECOND_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('wood')
-        self._blit_text('x ' + str(self.Tribe.get_resource('wood')),
+        self._blit_icon(WOOD)
+        self._blit_text('x ' + str(self.Tribe.get_resource(WOOD)),
                         'header', FIRST_TEXT_COLUMN)
         self._next_line()
 
-        self._blit_icon('stone')
-        self._blit_text('x ' + str(self.Tribe.get_resource('stone')),
+        self._blit_icon(STONE)
+        self._blit_text('x ' + str(self.Tribe.get_resource(STONE)),
                         'header', FIRST_TEXT_COLUMN)
         self._blit_button('wheel',SKILLS_MENU,offset=SECOND_BUTTON_COLUMN)
         self._next_line()
@@ -360,13 +365,13 @@ class Controls:
             '''
             (None) -> None
 
-            Blits button for menu submode switching.
+            Blits button for menu sub mode switching.
             '''
             if self.menu_submode == 'points':
                 mode_image = 'hit_point'
             elif self.menu_submode == 'equip':
                 mode_image = 'point'
-            self._blit_button(mode_image,SUBMODE,FIRST_TEXT_COLUMN[0])
+            self._blit_button(mode_image, SUBMODE, FIRST_TEXT_COLUMN[0])
 
             return None
 
@@ -426,19 +431,19 @@ class Controls:
             '''
             (None) -> str
 
-            Gets picture that should be blited for current popup.
+            Gets picture that should be blit for current popup.
             '''
             if 'picture' in self.popup_obj.popup:
-                return self.popup_obj.popup['picture']
+                return self.image[self.popup_obj.popup['picture']]
             else:
                 return self.popup_obj.popup['type'][0]
 
         self.pause = True
-        self.ScreenSurface.blit(self.Loader.get('background','popup'),
+        self.ScreenSurface.blit(self.Loader.get('background', 'popup'),
                                 POPUP_RECT)
-        self.ScreenSurface.blit(self.Loader.get(POPUP,_popup_pic()),POPUP_PIC)
+        self.ScreenSurface.blit(self.Loader.get(POPUP,_popup_pic()), POPUP_PIC)
         popup_text = self.Txt.popup(self.popup_obj)
-        _blit_popup_text(popup_text,1)
+        _blit_popup_text(popup_text, 1)
         # Popup button
         self._prepare_menu()
         self._blit_button('yes', YES)
@@ -492,7 +497,7 @@ class Controls:
             else:
                 return str(number)
 
-        def _blit_requirements(skill,req):
+        def _blit_requirements(skill, req):
             '''
             (Skill, dict) -> None
 
@@ -500,7 +505,7 @@ class Controls:
             is also added for Skill.
             '''
             self._blit_icon('skill' + str(skill.id))
-            self._blit_icon(self.cell_image_for[req['resource']],
+            self._blit_icon(req['resource'],
                             MENU_COLUMNS[1][0])
             txt = str(req['obtained']) + '/' + str(req['required'])
             self._blit_text(txt,'header',MENU_COLUMNS[2])
@@ -514,7 +519,8 @@ class Controls:
 
             Blits Skill as a button when required experience is gained.
             '''
-            self._blit_button('skill' + str(skill.id), 'skill' + _number_to_str(skill.id))
+            self._blit_button('skill' + str(skill.id),
+                              'skill' + _number_to_str(skill.id))
             return None
 
         def _blit_selected(skill):
@@ -527,8 +533,7 @@ class Controls:
             price = skill.get_price()
             counter = 0
             for resource in price:
-                self._blit_icon(self.cell_image_for[resource],
-                                MENU_COLUMNS[counter * 2 + 1][0])
+                self._blit_icon(resource, MENU_COLUMNS[counter * 2 + 1][0])
                 self._blit_text('x' + str(price[resource]),'header',
                                 MENU_COLUMNS[counter * 2 + 2])
                 counter += 1
@@ -639,9 +644,9 @@ class Controls:
             self.RegularText.set_bold(True)
 
         if type == 'header':
-            text_line = self.HeaderText.render(str(text), True, (0,0,0))
+            text_line = self.HeaderText.render(str(text), True, (0, 0, 0))
         elif type == 'regular':
-            text_line = self.RegularText.render(str(text), True, (0,0,0))
+            text_line = self.RegularText.render(str(text), True, (0, 0, 0))
         text_rect = text_line.get_rect()
 
         if not coordinates:
@@ -651,7 +656,7 @@ class Controls:
 
         self.ScreenSurface.blit(text_line, text_rect)
 
-        if bold == True:
+        if bold:
             self.HeaderText.set_bold(False)
             self.RegularText.set_bold(False)
 
@@ -707,6 +712,7 @@ class Controls:
         to left. Creates instance of Button class and adds it in the buttons
         list.
         '''
+        image = self.image[image]
         pic = self.Loader.get(BUTTON,image)
         draw_rect = pic.get_rect()
         draw_rect.top = self.menu_line[1]
@@ -727,22 +733,11 @@ class Controls:
         to left. Creates instance of Button class and adds it in the buttons
         list.
         '''
-
-        #draw_rect = self.Loader.controls[image].get_rect()
+        image = self.image[image]
         draw_rect = self.Loader.get(ICON,image).get_rect()
         draw_rect.top = self.menu_line[1]
         draw_rect.left = self.menu_line[0] + offset
-        #self.ScreenSurface.blit(self.Loader.controls[image],draw_rect)
-        self.ScreenSurface.blit(self.Loader.get(ICON,image),draw_rect)
-
-        return None
-
-    def _blit_richness(self, resource, offset= 0):
-        '''
-        (str,(int,int)) -> None
-
-        Blits resource richness for selected land cell.
-        '''
+        self.ScreenSurface.blit(self.Loader.get(ICON, image), draw_rect)
 
         return None
 
@@ -980,7 +975,36 @@ class Controls:
         return None
 
 
+class Image:
+    """Class for getting aliases to images from DB """
 
+    def __init__(self):
+        '''
+        Creates cursor to DB
+        '''
+        db = sqlite3.connect(DB_DIR + 'core.db')
+        self.db_cursor = db.cursor()
+        self.aliases = {}
+
+        return None
+
+    def __getitem__(self, alias):
+        '''
+        Gets alias to picture name.
+        If entry with such name is not found then returns alias to
+        error picture.
+        '''
+        if alias in self.aliases:
+            return self.aliases[alias]
+        self.db_cursor.execute('SELECT picture FROM pic_aliases WHERE alias = "'+\
+                               str(alias)+'"')
+        value = self.db_cursor.fetchone()
+        if value:
+            self.aliases[alias] = value[0]
+            return value[0]
+        else:
+            print('Alias "' + alias + '" is NOT found.')
+            return ''
 
 
 

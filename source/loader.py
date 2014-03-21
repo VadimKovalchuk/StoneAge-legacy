@@ -6,7 +6,7 @@ from source import tools
 #Uplading constants from setup.ini file
 from source import tools
 
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Game directories
 LAND_TILES_DIR  = constants['LAND_TILES_DIR']   #Default is 'tiles\\'
@@ -199,6 +199,7 @@ class Loader:
             if tools.file_exists(directory, img_name + '.png'):
                 filename = directory + img_name + '.png'
                 processed_image = pygame.image.load(filename).convert()
+                processed_image.set_colorkey((0, 0, 0, 255))
                 self.cash[location][img_name] = processed_image
                 if LOADER_DEBUG:
                     print('LOADER', filename, 'loaded to',location)

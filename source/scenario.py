@@ -2,7 +2,7 @@ from source import tools
 
 #CONSTANTS
 #Uplading constants from setup.ini file
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Game directories
 SCENARIO_DIR = constants['SCENARIO_DIR'] #Default is'scenario\\'

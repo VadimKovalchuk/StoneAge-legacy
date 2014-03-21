@@ -5,7 +5,7 @@ from source import skilltree
 #Uplading constants from setup.ini file
 from source import tools
 constants = {}
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Active language
 LANGUAGE        = constants['LANGUAGE']

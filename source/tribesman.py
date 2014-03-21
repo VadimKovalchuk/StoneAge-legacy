@@ -5,7 +5,7 @@ import pygame
 from source import tools
 
 constants = {}
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Cell width and height
 LAND_CELL_HEIGHT= constants['LAND_CELL_HEIGHT'] #Calculated

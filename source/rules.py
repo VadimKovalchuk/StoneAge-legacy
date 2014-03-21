@@ -3,7 +3,7 @@
 #Uplading constants from setup.ini file
 from source import tools
 import random
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Land cell types
 FIELD = constants['FIELD']      #Default is 'field'

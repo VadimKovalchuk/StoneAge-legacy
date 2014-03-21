@@ -6,12 +6,12 @@ from source import skilltree
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import tools
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Loader image categories
 SPRITE        = constants['SPRITE']
 #Timing and delay intervals
-SEND_INTERVAL = constants['SEND_INTERVAL']        #Default is 'food'
+SEND_INTERVAL = constants['SEND_INTERVAL']        #Default is 700
 #Resource types
 FOOD =          constants['FOOD']        #Default is 'food'
 STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'

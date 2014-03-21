@@ -3,7 +3,7 @@ import pygame
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import tools
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Cell width and height
 LAND_CELL_HEIGHT= constants['LAND_CELL_HEIGHT'] #Calculated

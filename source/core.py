@@ -9,7 +9,7 @@ from source import textprocessor
 #CONSTANTS
 #Uplading constants from setup.ini file
 
-constants = tools.importConstants()
+constants = tools.Constants()
 '''___________________________________________________________'''
 #Number of cells by X and Y axises
 LAND_NUM_Y      = constants['LAND_NUM_Y']       #Default 4
