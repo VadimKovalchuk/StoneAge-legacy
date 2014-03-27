@@ -70,7 +70,10 @@ class SkillTree:
         '''
         assert self.learned,'No Skill is set for mastering'
         self.active_skills.append(self.learned.id)
+        if self.learned.items:
+            self.available_items.extend(self.learned.items)
         self.available_skills.remove(self.learned)
+        self.Tribe.Core.Rules.skill_dependencies(self.Tribe, self.learned.id)
         available_ids = self._track_dependencies(self.learned.id)
         for new_id in available_ids:
             self.available_skills.append(Skill(self,new_id))

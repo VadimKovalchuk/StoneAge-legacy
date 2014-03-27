@@ -360,6 +360,39 @@ class Rules:
 
         return None
 
+    def skill_dependencies(self, Tribe, skill_id):
+        '''
+        (int) -> None
+
+        Change tribe parameters according to newly learned skill.
+        '''
+        def skin_treating():
+            '''
+            (None) -> None
+
+            When Skin treating is learned moist skin amount should be cleared.
+            '''
+            numbers = Tribe.resources[MOIST_SKIN]
+            Tribe.resources[MOIST_SKIN] = [0 for i in numbers]
+
+            return None
+
+        def bones():
+            '''
+            (None) -> None
+
+            When Hunting  is learned bones amount should be cleared.
+            '''
+            Tribe.resources[BONES] = 0
+
+            return None
+
+        skill_mapping = {7:skin_treating, 2:bones}
+        if skill_id in skill_mapping:
+            skill_mapping[skill_id]()
+
+        return None
+
     def _log(self, line, console = True, log = True):
         '''
         (str, bool, bool) -> None

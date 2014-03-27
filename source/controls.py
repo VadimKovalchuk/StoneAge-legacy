@@ -38,9 +38,9 @@ WOOD =          constants['WOOD']        #Default is 'wood'
 STONE =         constants['STONE']       #Default is 'stone'
 #Dirrectories
 DB_DIR = constants['DB_DIR']
-
 del constants
 
+OPEN_ALL = False
 BUTTON_SIZE = 35
 LINE_WIDTH = 2
 FIRST_TEXT_COLUMN = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
@@ -108,20 +108,7 @@ class Controls:
         #Internal variables
         self.HeaderText = pygame.font.SysFont(None, 24)
         self.RegularText = pygame.font.SysFont(None, 20)
-        self.richness_image_for = {
-            EMPTY:   'red_circle',
-            LOW:     'red_circle',
-            MODERATE:'yellow_circle',
-            MANY:    'green_circle',
-            RICH:    'blue_circle'
-        }
-        self.cell_image_for = {
-            'food': 'apple',
-            'wood': 'wood',
-            'stone':'stone',
-            'hunt': 'meat',
-            'bones': 'bone'
-        }
+        self.res_skill_depend = {'hunt':2, 'wood':1, 'stone':8}
 
         self.menu_line = [WINDOW_WIDTH - SIDE_PANEL_WIDTH +LINE_WIDTH * 4,
                           LINE_WIDTH * 4]
@@ -221,6 +208,12 @@ class Controls:
             for resource in self.selected.resources:
                 if self.selected.resources[resource] == 0:
                     continue
+                if not OPEN_ALL:
+                    if resource in self.res_skill_depend:
+                        skill_id = self.res_skill_depend[resource]
+                        if skill_id not in self.Tribe.SkillTree.active_skills:
+                            continue
+
                 # Blits button which creates the party for specific resource
                 self._blit_button('cell_' + resource,'get_' + resource)
 
@@ -252,61 +245,126 @@ class Controls:
         '''
         (self) -> NoneType
 
-        Blits tribe menu section
+        Blits tribe menu section. All buttons are blit according to skill
+        dependencies of current tribe.
         '''
+        def is_visible(skill_id):
+            '''
+            (int) -> bool
 
+            Returns true if current tribe mastered skill by passed ID.
+            '''
+            if OPEN_ALL:
+                return True
+            else:
+                return skill_id in self.Tribe.SkillTree.active_skills
 
+        def population_line():
+            '''
+            (None) -> None
+
+            Blits population amount and buttons for increasing population,
+            healing and inventory.
+            '''
+            self._blit_button('tribesman',PROCESS_MAN)
+            self._blit_text('x ' + str(len(self.Tribe.population)),
+                            'header', FIRST_TEXT_COLUMN)
+            self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
+            #self._blit_button('inventory',PROCESS_FOOD,
+            #                    MENU_COLUMNS[-1][0])
+
+            return True
+
+        def food_line():
+            '''
+            (None) -> None
+
+            Blits amount and buttons for stocked and raw food.
+            '''
+            self._blit_icon(FOOD)
+            self._blit_text('x ' + str(self.Tribe.get_resource(FOOD)),
+                            'header', FIRST_TEXT_COLUMN)
+            if is_visible(3):#STOCKED_FOOD
+                self._blit_button(STOCKED_FOOD,PROCESS_FOOD,
+                                    offset=SECOND_BUTTON_COLUMN)
+                self._blit_text('x ' + str(self.Tribe.get_resource(STOCKED_FOOD)),
+                                'header', SECOND_TEXT_COLUMN)
+
+            return True
+
+        def bones_line():
+            '''
+            (None) -> None
+
+            Blits bones amount and button for workshop.
+            '''
+            if is_visible(2): #Hunting
+                self._blit_icon(BONES)
+                self._blit_text('x ' + str(self.Tribe.get_resource(BONES)),
+                                'header', FIRST_TEXT_COLUMN)
+            else:
+                return False
+            know_items = len(self.Tribe.SkillTree.available_items)
+            if know_items:
+                self._blit_button('workshop',PROCESS_FOOD,
+                                    offset=SECOND_BUTTON_COLUMN)
+            #self._blit_icon(STOCKED_FOOD, SECOND_TEXT_COLUMN[0])
+            return True
+
+        def skin_line():
+            '''
+            (None) -> None
+
+            Blits amount and buttons for raw and treated skin.
+            '''
+            if not is_visible(7):#Skin treating
+                return False
+            self._blit_icon(MOIST_SKIN)
+            self._blit_text('x ' + str(self.Tribe.get_resource(MOIST_SKIN)),
+                            'header', FIRST_TEXT_COLUMN)
+
+            self._blit_button(SKIN,PROCESS_SKIN,
+                                offset=SECOND_BUTTON_COLUMN)
+            self._blit_text('x ' + str(self.Tribe.get_resource(SKIN)),
+                            'header', SECOND_TEXT_COLUMN)
+            return True
+
+        def wood_line():
+            '''
+            (None) -> None
+
+            Blits wood amount and camp fire(not implemented) indicator.
+            '''
+            if is_visible(1):#Fire and wood
+                self._blit_icon(WOOD)
+                self._blit_text('x ' + str(self.Tribe.get_resource(WOOD)),
+                                'header', FIRST_TEXT_COLUMN)
+                return True
+
+        def stone_line():
+            '''
+            (None) -> None
+
+            Blits stone amount and button for skills.
+            '''
+            if is_visible(8): #Stone
+                self._blit_icon(STONE)
+                self._blit_text('x ' + str(self.Tribe.get_resource(STONE)),
+                                'header', FIRST_TEXT_COLUMN)
+            self._blit_button('wheel',SKILLS_MENU,offset=SECOND_BUTTON_COLUMN)
+            return True
+
+        lines = (population_line, food_line, bones_line, skin_line,
+                 wood_line, stone_line)
         self._prepare_menu()
 
         self._blit_text(self.Tribe.name, 'header')
         self._next_line(self.HeaderText.get_height())
 
-        self._blit_button('tribesman',PROCESS_MAN)
-        self._blit_text('x ' + str(len(self.Tribe.population)),
-                        'header', FIRST_TEXT_COLUMN)
-        self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
-        #self._blit_button('inventory',PROCESS_FOOD,
-        #                    MENU_COLUMNS[-1][0])
-        self._next_line()
-
-        self._blit_icon(FOOD)
-        self._blit_text('x ' + str(self.Tribe.get_resource(FOOD)),
-                        'header', FIRST_TEXT_COLUMN)
-
-        self._blit_button(STOCKED_FOOD,PROCESS_FOOD,
-                            offset=SECOND_BUTTON_COLUMN)
-        self._blit_text('x ' + str(self.Tribe.get_resource(STOCKED_FOOD)),
-                        'header', SECOND_TEXT_COLUMN)
-        self._next_line()
-
-        self._blit_icon(BONES)
-        self._blit_text('x ' + str(self.Tribe.get_resource(BONES)),
-                        'header', FIRST_TEXT_COLUMN)
-        #self._blit_button('workshop',PROCESS_FOOD,
-        #                    offset=SECOND_BUTTON_COLUMN)
-        #self._blit_icon(STOCKED_FOOD, SECOND_TEXT_COLUMN[0])
-        self._next_line()
-
-        self._blit_icon(MOIST_SKIN)
-        self._blit_text('x ' + str(self.Tribe.get_resource(MOIST_SKIN)),
-                        'header', FIRST_TEXT_COLUMN)
-
-        self._blit_button(SKIN,PROCESS_SKIN,
-                            offset=SECOND_BUTTON_COLUMN)
-        self._blit_text('x ' + str(self.Tribe.get_resource(SKIN)),
-                        'header', SECOND_TEXT_COLUMN)
-        self._next_line()
-
-        self._blit_icon(WOOD)
-        self._blit_text('x ' + str(self.Tribe.get_resource(WOOD)),
-                        'header', FIRST_TEXT_COLUMN)
-        self._next_line()
-
-        self._blit_icon(STONE)
-        self._blit_text('x ' + str(self.Tribe.get_resource(STONE)),
-                        'header', FIRST_TEXT_COLUMN)
-        self._blit_button('wheel',SKILLS_MENU,offset=SECOND_BUTTON_COLUMN)
-        self._next_line()
+        for line in lines:
+            blited = line()
+            if blited:
+                self._next_line()
 
         self._compleate_menu()
 
@@ -630,7 +688,7 @@ class Controls:
 
         return None
 
-    def _blit_text(self, text, type = 'regular', offset = (0,0),
+    def _blit_text(self, text, type = 'regular', offset = (0, 0),
                    bold = False, coordinates = None):
         '''
         (self, str, (int, int), (int, int), bool) -> NoneType
