@@ -72,6 +72,8 @@ class Party:
             elif 'skill':
                 pass
             else: assert False, 'Incorrect party command for tribe functionality'
+        elif 'idle' in self.purpose:
+            self.limits = {'min': 1, 'max': len(self.Tribe.population)}
         else: assert False, 'Incorrect party command type'
 
         return None
@@ -111,6 +113,7 @@ class Party:
         elif 'quest' in self.purpose:
             #Not implemented
             pass
+
         else:
             assert False, 'incorrect party command syntax'+ str(self.purpose)
 

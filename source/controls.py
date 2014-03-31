@@ -40,17 +40,17 @@ STONE =         constants['STONE']       #Default is 'stone'
 DB_DIR = constants['DB_DIR']
 del constants
 
-OPEN_ALL = False
+OPEN_ALL = True
 BUTTON_SIZE = 35
 LINE_WIDTH = 2
 FIRST_TEXT_COLUMN = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
 SECOND_BUTTON_COLUMN = int(BUTTON_SIZE *2.5)
 SECOND_TEXT_COLUMN = (int(BUTTON_SIZE *3.6), BUTTON_SIZE // 3)
 MENU_COLUMNS = [(0,BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *2.2), BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *3.3), BUTTON_SIZE // 3),
-               (int(BUTTON_SIZE *4.4), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *1.1 - 1), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *2.2 - 2), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *3.3 - 3), BUTTON_SIZE // 3),
+               (int(BUTTON_SIZE *4.4 - 4), BUTTON_SIZE // 3),
                (int(SIDE_PANEL_WIDTH - LINE_WIDTH * 8 - BUTTON_SIZE), BUTTON_SIZE // 3)]
 
 #Buttons
@@ -259,6 +259,18 @@ class Controls:
             else:
                 return skill_id in self.Tribe.SkillTree.active_skills
 
+        def heal_button():
+            '''
+            (None) -> bool
+
+            Verifies if someone is injured.
+            '''
+            for man in self.Tribe.population:
+                if man.points < 5:
+                    return True
+
+            return False
+
         def population_line():
             '''
             (None) -> None
@@ -269,10 +281,8 @@ class Controls:
             self._blit_button('tribesman',PROCESS_MAN)
             self._blit_text('x ' + str(len(self.Tribe.population)),
                             'header', FIRST_TEXT_COLUMN)
-            self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
-            #self._blit_button('inventory',PROCESS_FOOD,
-            #                    MENU_COLUMNS[-1][0])
-
+            if heal_button():
+                self._blit_button('heal',PROCESS_HEAL,SECOND_BUTTON_COLUMN)
             return True
 
         def food_line():
@@ -304,11 +314,7 @@ class Controls:
                                 'header', FIRST_TEXT_COLUMN)
             else:
                 return False
-            know_items = len(self.Tribe.SkillTree.available_items)
-            if know_items:
-                self._blit_button('workshop',PROCESS_FOOD,
-                                    offset=SECOND_BUTTON_COLUMN)
-            #self._blit_icon(STOCKED_FOOD, SECOND_TEXT_COLUMN[0])
+
             return True
 
         def skin_line():
@@ -335,10 +341,15 @@ class Controls:
 
             Blits wood amount and camp fire(not implemented) indicator.
             '''
-            if is_visible(1):#Fire and wood
+            if is_visible(1):#Wood
                 self._blit_icon(WOOD)
                 self._blit_text('x ' + str(self.Tribe.get_resource(WOOD)),
                                 'header', FIRST_TEXT_COLUMN)
+                if self.Tribe.resources['fire']:
+                    self._blit_icon('fire', SECOND_BUTTON_COLUMN)
+                else:
+                    self._blit_icon('grayed_fire', SECOND_BUTTON_COLUMN)
+
                 return True
 
         def stone_line():
@@ -351,11 +362,28 @@ class Controls:
                 self._blit_icon(STONE)
                 self._blit_text('x ' + str(self.Tribe.get_resource(STONE)),
                                 'header', FIRST_TEXT_COLUMN)
-            self._blit_button('wheel',SKILLS_MENU,offset=SECOND_BUTTON_COLUMN)
+
+            return True
+
+        def tribe_line():
+            '''
+            (None) -> None
+
+            Blits tribe management buttons.
+            '''
+            self._blit_delimiter()
+            self._blit_button('wheel',SKILLS_MENU,MENU_COLUMNS[0][0])
+            know_items = len(self.Tribe.SkillTree.available_items)
+            if know_items:
+                self._blit_button('workshop',PROCESS_FOOD,MENU_COLUMNS[1][0])
+            #self._blit_button('inventory',PROCESS_FOOD, MENU_COLUMNS[2][0])
+
+            self._blit_button('next', 'next', MENU_COLUMNS[-1][0])
+
             return True
 
         lines = (population_line, food_line, bones_line, skin_line,
-                 wood_line, stone_line)
+                 wood_line, stone_line, tribe_line)
         self._prepare_menu()
 
         self._blit_text(self.Tribe.name, 'header')
@@ -995,6 +1023,20 @@ class Controls:
 
             return None
 
+        def next_turn():
+            '''
+            (None) -> None
+
+            Assigns free tribesmen into idle party and overs the turn.
+            '''
+            self.menu_mode = 'party_builder'
+            self.Party = party.Party(self.Tribe, self.Tribe.home_cell.cell, 'idle')
+            self.free_list = self.Tribe.get_free_tribesmen()
+            self.Party.members = self.free_list[:]
+            _yes_handler()
+
+            return None
+
         def _print_parties():
             '''
             (None) -> None
@@ -1021,7 +1063,8 @@ class Controls:
                         _switch_submode()
                     elif self.called_method == SKILLS_MENU:
                         _skills_menu()
-
+                    elif self.called_method == 'next':
+                        next_turn()
         else:
             if self.menu_mode == 'general':
                 (x,y) = tools.pxToCellCoordinate(position)

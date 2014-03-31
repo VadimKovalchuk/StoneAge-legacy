@@ -64,7 +64,6 @@ class Ai:
         for group in self.Tribe.parties:
             print(group)
         self.Tribe.build_send_query()
-
         return None
 
     def _is_valid_coord(self, coordinate):

@@ -66,7 +66,8 @@ class Tribe:
             MOIST_SKIN:  [0,0,0],
             SKIN:        0,
             WOOD:        0,
-            STONE:       0
+            STONE:       0,
+            'fire':      0
         }
 
         return None
@@ -104,9 +105,9 @@ class Tribe:
 
         Performs activities required in the morning phase.
         '''
-        if self.player_type == 'player':
+        if self.ready:
             return None
-        else:
+        if not self.player_type == 'player':
             self.AI.generate_parties()
 
         return None
@@ -128,6 +129,8 @@ class Tribe:
             elif 'quest' in group.purpose:
                 #Not implemented
                 pass
+            elif 'idle' in group.purpose:
+                pass
             else:
                 assert False, 'incorrect party command syntax'+ str(self.purpose)
         self.ready = True
@@ -146,8 +149,8 @@ class Tribe:
         self._loot_transfer()
         self.Core.Rules.feeding(self)
         self.Core.Rules.repository_maintenance(self)
+        self.Core.Rules.treat_fire(self)
         self.parties = []
-
         self.ready = True
         self._finalize_popup('nightly')
         return None
@@ -166,6 +169,8 @@ class Tribe:
                 pass
             elif 'quest' in group.purpose:
                 #Not implemented
+                pass
+            elif 'idle' in group.purpose:
                 pass
             else:
                 assert False, 'Incorrect party command syntax'+ str(self.purpose)
@@ -376,9 +381,10 @@ class Tribe:
         for popup display.
         '''
         if self.player_type == 'player':
-            if 'type' not in self.popup:
-                self.add_to_popup('type', type)
-            self.raise_popup = True
+            if self.popup:
+                if 'type' not in self.popup:
+                    self.add_to_popup('type', type)
+                self.raise_popup = True
         else:
             self.popup = {}
         return None

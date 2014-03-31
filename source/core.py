@@ -3,7 +3,6 @@ from source import land_cell
 from source import tribe
 from source import path_finder
 from source import rules
-from source import logger
 from source import textprocessor
 
 #CONSTANTS
@@ -45,7 +44,7 @@ class Core:
         self.active_sprites = []
 
         self.PathFinder = None
-        self.Logger = logger.Logger()
+        self.Logger = tools.Logger()
         self.Rules = rules.Rules(self)
         self.Txt = textprocessor.TextProcessor()
 
@@ -258,6 +257,7 @@ class Core:
                 all_done_flag = False
         if all_done_flag:
             self._next_game_phase()
+        self.check_popups()
 
 
 
@@ -270,14 +270,20 @@ class Core:
         Sets next game phase. When last phase is reached - sets firs one.
         '''
         if self.game_phase == EVENING:
-            #Turn is over
+            #Turn is over, updates at the end of the day are applied.
             self.environment_update()
             self.move_counter += 1
             print('Move #',self.move_counter,'is over.')
+
         self.game_phase += 1
         if self.game_phase > 4:
             self.game_phase = 0
         print('Game phase:',self.game_phase)
+
+        if self.game_phase == MORNING:
+            #New turn starts, updates at the beginning of the day are applied.
+            for tribe in self.tribes:
+                self.Rules.treat_fire(tribe)
         self.update = True
         for tribe in self.tribes:
             tribe.ready = False

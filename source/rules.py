@@ -360,6 +360,22 @@ class Rules:
 
         return None
 
+    def treat_fire(self, Tribe):
+        '''
+        (Tribe) -> None
+
+        Consumes one wood each two days to keep the fire.
+        '''
+        if Tribe.resources['fire']:
+            Tribe.resources['fire'] -= 1
+        if (not Tribe.resources['fire']) and Tribe.resources[WOOD]:
+            Tribe.resources[WOOD] -= 1
+            if self.Core.game_phase == 4:
+                Tribe.resources['fire'] = 3
+            else:
+                Tribe.resources['fire'] = 4
+        return None
+
     def skill_dependencies(self, Tribe, skill_id):
         '''
         (int) -> None
