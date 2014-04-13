@@ -29,7 +29,7 @@ class SkillTree:
         self.available_skills = []
         self.learned = None
         self.active_skills = []
-        self.available_items = []
+        self.available_items = {}
         db = sqlite3.connect(DB_DIR + 'core.db')
         self.db_cursor = db.cursor()
 
@@ -68,10 +68,27 @@ class SkillTree:
             for mastered.
          - items that opened by resource  - added to available items list
         '''
+        def add_items(item_list):
+            '''
+            (list)-> None
+
+            Defines item type and adds to corresponding item type list
+            in available_items dictionary
+            '''
+            for item in item_list:
+                self.db_cursor.execute('SELECT type FROM items WHERE id=' + str(item))
+                item_type = self.db_cursor.fetchone()[0]
+                if item_type in self.available_items:
+                    self.available_items[item_type].append(item)
+                else:
+                    self.available_items[item_type] = [item]
+
+            return None
+
         assert self.learned,'No Skill is set for mastering'
         self.active_skills.append(self.learned.id)
         if self.learned.items:
-            self.available_items.extend(self.learned.items)
+            add_items(self.learned.items)
         self.available_skills.remove(self.learned)
         self.Tribe.Core.Rules.skill_dependencies(self.Tribe, self.learned.id)
         available_ids = self._track_dependencies(self.learned.id)
@@ -216,7 +233,7 @@ class Skill:
         price = {}
         for resource in self.price:
             cost = self.price[resource]
-            if 'Px' in cost:
+            if type(cost) == type('') and 'Px' in cost:
                 multiplier = int(cost[-1])
                 cost = len(self.SkillTree.Tribe.population) * multiplier
             price[resource] = cost
@@ -232,10 +249,12 @@ class Skill:
         '''
         price = self.get_price()
         for resource in price:
-            if resource.isnumeric():
-                pass #Will be compleate after Workshop implementation
-            if price[resource] > self.SkillTree.Tribe.get_resource(resource):
-                return False
+            if type(resource) == type(''):
+                if price[resource] > self.SkillTree.Tribe.get_resource(resource):
+                    return False
+            else:
+                if price[resource] > self.SkillTree.Tribe.get_item_amount(resource):
+                    return False
 
         return True
 

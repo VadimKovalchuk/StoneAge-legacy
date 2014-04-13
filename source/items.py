@@ -1,8 +1,12 @@
 from source import tools
 import random, sqlite3
 
-ITEMS_DIR = 'items\\'
-DB_DIR = 'database\\'
+constants = tools.Constants()
+'''___________________________________________________________'''
+LANGUAGE    = constants['LANGUAGE']
+DB_DIR      = constants['DB_DIR']
+del constants
+'''___________________________________________________________'''
 
 class Item:
     """ All kinds of goods that can be worn, dressed or carried by tribesmen """
@@ -66,17 +70,6 @@ class Item:
 
         return  result
 
-
-    def __str__(self):
-
-        string = 'ID' + str(self.id)
-        if self.type == 'consumable':
-            string += 'x' + str(self.amount)
-        else:
-            string += '('+ str(self.durability) + ')'
-
-        return string
-
     def hit(self):
         '''
         (None) -> int
@@ -104,4 +97,25 @@ class Item:
         '''
         return self.durability < 1
 
+    def get_name(self):
+        '''
+        (None) -> str
 
+        Returns item name by own name text id
+        '''
+        id = str(self.name)
+        db = sqlite3.connect(DB_DIR + 'core.db')
+        cursor = db.cursor()
+        cursor.execute('SELECT ' + LANGUAGE + ' FROM controls WHERE id =' + id)
+        name = cursor.fetchone()[0]
+        db.close()
+        return name
+
+    def __str__(self):
+        string = self.get_name()
+        if self.type == 'consumable':
+            string += 'x' + str(self.amount)
+        else:
+            string += '('+ str(self.durability) + ')'
+
+        return string

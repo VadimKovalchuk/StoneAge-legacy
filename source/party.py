@@ -67,6 +67,8 @@ class Party:
                 self.limits = {'min': 1, 'max': 1}
             elif 'man' in self.purpose:
                 self.limits = {'min': 2, 'max': 2}
+            elif 'workshop'in self.purpose:
+                self.limits = {'min': 1, 'max': 1}
             elif 'heal' in self.purpose:
                 self.limits = {'min': 1, 'max': 15}
             elif 'skill':

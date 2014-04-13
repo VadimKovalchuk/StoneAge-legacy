@@ -29,17 +29,14 @@ class Tribe:
 
     def __init__(self, name, Loader, Core, LandCell,  player = 'CPU'):
         '''
-        (land_cell, str, (int, int), str, str, custom) -> NoneType
+        (str, Loader, Core, LandCell, str) -> NoneType
 
-        Contains all information about tribesman:
+        Contains all information about tribe:
         - name
-        - land cell coordinates (x, y);
-        - absolute coordinates
-        - (!not implemented) tribesman rectangle
-        - owned instrument/weapon;
-        - weared costume/armor;
-        - inventory (dictionary where key is a item and value is its number)
-        - custom attribute for quests purposes
+        - Loader reference
+        - Core reference
+        - home land cell reference
+        - tribe type
         '''
 
         self.name = name
@@ -58,6 +55,7 @@ class Tribe:
         self.player_type = player
         self.AI = ai.Ai(self)
         self.SkillTree = skilltree.SkillTree(self)
+        self.Workshop = Workshop(self)
         self.resources = {
             FOOD:        [0,0,0],
             STOCKED_FOOD:[0,0,0,0,0,0,0,0,0],
@@ -258,6 +256,24 @@ class Tribe:
 
         return result
 
+    def get_item_amount(self, item):
+        '''
+        (int or Item) -> int
+
+        Receives Item reference or item ID and returns its amount in
+        Tribe inventory. Note that items that equipped on tribesmen
+        are not count.
+        '''
+        if type(item) == type(1):
+            id = item
+        else:
+            id = item.id
+        amount = 0
+        for item in self.inventory:
+            if item.id == id:
+                amount += 1
+        return amount
+
     def add_resource(self, type, amount):
         '''
         (str, int) -> None
@@ -319,6 +335,32 @@ class Tribe:
                 rest -= self.resources[type]
                 self.resources[type] = 0
         return rest
+
+    def find_item(self, id):
+        '''
+        (int) -> Item
+
+        Searches for item with passed id and returns its reference.
+        Only first item with such id can be returned.
+        '''
+        if not len(self.inventory):
+            return None
+        for item in self.inventory:
+            if item.id == id:
+                return item
+        return None
+
+    def consume_items(self, item_id, amount = 1):
+        '''
+        (int, int) -> None
+
+        Removes from inventory items with passed id with quantity that passed.
+        '''
+        for i in range(0,amount):
+            item = self.find_item(item_id)
+            self.inventory.remove(item)
+
+        return None
 
     def remove_dead(self):
         '''
@@ -402,10 +444,111 @@ class Tribe:
 
         return result
 
+class Workshop:
+    """ Support class for Tribe """
 
+    def __init__(self, Tribe):
+        '''
+        (Tribe) -> NoneType
 
+        Contains all information related to item production:
+        - Tribe
+        - current produced item
+        - requirements
+        - manpower counters
+        '''
 
+        self.Tribe = Tribe
+        self.selected = None
+        self.production = False
+        self.points = 0
 
+        return None
+
+    def conditions(self):
+        '''
+        (None) -> bool
+
+        Verifies if all ingredients are available for item production.
+        '''
+        assert self.selected.ingredients, 'Item is not selected in Workshop.'
+        for ingredient in self.selected.ingredients:
+            if ingredient == 'points':
+                continue
+            if type(ingredient) == type(1):
+                available = self.Tribe.get_item_amount(ingredient)
+            elif type(ingredient) == type(''):
+                available = self.Tribe.get_resource(ingredient)
+            else:
+                assert False, 'Incorrect resource type is requested from tribe'
+            required = self.selected.ingredients[ingredient]
+            if required > available:
+                return False
+
+        return True
+
+    def reset(self):
+        '''
+        (None) -> None
+
+        Resets Workshop crafting parameters.
+        '''
+        self.production = False
+        self.points = 0
+        self.selected = None
+
+        return None
+
+    def process(self, points):
+        '''
+        (int) -> str
+
+        Spend passed points amount into crafting process. If item is crafted
+        put it into tribes inventory and returns True.
+        Otherwise False is returned.
+        '''
+        def update_statistics(item = None):
+            '''
+            (Item) -> None
+
+            Updates Tribes statistics with respect to new item type.
+            '''
+            if 'goods' in self.Tribe.statistics:
+                self.Tribe.statistics['goods'] += 1
+            else:
+                self.Tribe.statistics['goods'] = 0
+            return None
+
+        if not (self.production or self.selected):
+            return False
+        self.points += points
+        required = self.selected.ingredients['points']
+        if self.points >= required:
+            self.Tribe.inventory.append(self.selected)
+            update_statistics(self.selected)
+            self.reset()
+            return True
+        else:
+            return False
+
+    def start_crafting(self):
+        '''
+        (None) -> None
+
+        Reduces amount of ingredients in Tribe and starts crafting process.
+        '''
+        assert self.conditions(), 'Incorrect crafting parameters'
+
+        for ingredient in self.selected.ingredients:
+            if ingredient == 'points':
+                continue
+            amount = self.selected.ingredients[ingredient]
+            if type(ingredient) == type(''):
+                self.Tribe.consume_resource(ingredient, amount)
+            else:
+                self.Tribe.consume_items(ingredient, amount)
+        self.production = True
+        return None
 
 
 

@@ -194,14 +194,24 @@ class Rules:
             skill = Party.Tribe.SkillTree.learned
             price = skill.get_price()
             for resource in price:
-                if resource.isnumeric():
-                    pass #Will be compleate after Workshop implementation
-                else:
+                if type(resource) == type(''):
                     Party.Tribe.consume_resource(resource,price[resource])
+                else:
+                    Party.Tribe.consume_items(resource,price[resource])
             Party.Tribe.SkillTree.master_skill()
             Party.Tribe.popup = {'type':['skill_done'],'skill':skill.id,
                                        'picture':'skill' + str(skill.id)}
+            self._log('Skill #' + str(skill.id) + ' is mastered.')
             Party.Tribe.SkillTree.learned = None
+        elif 'workshop' in Party.purpose:
+            amount = self._calculate_total_points(Party)
+            name = Party.Tribe.Workshop.selected.get_name()
+            Party.Tribe.add_to_popup(4007, amount) # peaces of skin are dressed
+            self._log(str(amount) + ' points are spent for ' + name + ' creation.')
+            created = Party.Tribe.Workshop.process(amount)
+            if created:
+                self._log('New item is created.')
+                Party.Tribe.add_to_popup(4008, name) # peaces of skin are dressed
 
         return None
 

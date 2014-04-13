@@ -2,7 +2,7 @@ import pygame, sqlite3
 
 #CONSTANTS
 #Uplading constants from setup.ini file
-from source import tools, party
+from source import tools, party, items
 
 constants = tools.Constants()
 '''___________________________________________________________'''
@@ -62,13 +62,14 @@ PROCESS_FOOD = 'process_food'
 PROCESS_SKIN = 'process_skin'
 PROCESS_HEAL = 'process_heal'
 PROCESS_SKILL = 'process_skill'
+PROCESS_WORKSHOP = 'process_workshop'
 GET_FOOD = 'get_food'
 GET_HUNT = 'get_hunt'
 GET_WOOD = 'get_wood'
 GET_STONE = 'get_stone'
 SKILLS_MENU = 'skills_menu'
 FORM_PARTY = [PROCESS_MAN, PROCESS_FOOD, PROCESS_SKIN,PROCESS_HEAL,
-              GET_FOOD, GET_HUNT, GET_WOOD, GET_STONE]
+              PROCESS_WORKSHOP, GET_FOOD, GET_HUNT, GET_WOOD, GET_STONE]
 #Popup
 POPUP_RECT = ((FIELD_WIDTH // 4,WINDOW_HEIGHT // 4),
               (FIELD_WIDTH // 2, WINDOW_HEIGHT //2))
@@ -104,6 +105,9 @@ class Controls:
         self.party_list = []
         self.free_list = []
         self.image = Image() #Picture aliases
+        self.item_catalog_data = {'object':self.Tribe.Workshop,
+                                  'item_dict':{'weapon':[1,2,3]},
+                                  'revert_menu': 'general'}
 
         #Internal variables
         self.HeaderText = pygame.font.SysFont(None, 24)
@@ -149,6 +153,10 @@ class Controls:
             self._blit_popup()
         elif self.menu_mode == SKILLS_MENU:
             self._blit_skills_menu()
+        elif self.menu_mode == 'workshop':
+            self._blit_workshop_menu()
+        elif self.menu_mode == 'item_catalog':
+            self._blit_item_catalog()
         else:
             assert False, 'Incorrect menu mode'
         self.update = False
@@ -374,8 +382,8 @@ class Controls:
             self._blit_delimiter()
             self._blit_button('wheel',SKILLS_MENU,MENU_COLUMNS[0][0])
             know_items = len(self.Tribe.SkillTree.available_items)
-            if know_items:
-                self._blit_button('workshop',PROCESS_FOOD,MENU_COLUMNS[1][0])
+            if know_items or OPEN_ALL:
+                self._blit_button('workshop', 'workshop', MENU_COLUMNS[1][0])
             #self._blit_button('inventory',PROCESS_FOOD, MENU_COLUMNS[2][0])
 
             self._blit_button('next', 'next', MENU_COLUMNS[-1][0])
@@ -559,8 +567,6 @@ class Controls:
                                        'skill':skill_id,
                                        'picture':'skill' + str(skill_id)}
                     self.Core.raise_popup = True
-                    self.Core.update = True
-                    self.update = True
                 elif self.called_method[-3:].isnumeric():
                     skill_id = int(self.called_method[-3:])
                     for skill in self.Tribe.SkillTree.available_skills:
@@ -619,7 +625,10 @@ class Controls:
             price = skill.get_price()
             counter = 0
             for resource in price:
-                self._blit_icon(resource, MENU_COLUMNS[counter * 2 + 1][0])
+                if type(resource) == type(''):
+                    self._blit_icon(resource, MENU_COLUMNS[counter * 2 + 1][0])
+                else:
+                    self._blit_icon('item' + str(resource), MENU_COLUMNS[counter * 2 + 1][0])
                 self._blit_text('x' + str(price[resource]),'header',
                                 MENU_COLUMNS[counter * 2 + 2])
                 counter += 1
@@ -641,11 +650,9 @@ class Controls:
                 self._blit_button(YES,YES)
             else:
                 if len(self.Tribe.get_free_tribesmen()) < len(self.Tribe.population):
-                    self._blit_text(self.Txt.get_txt('controls',1006))
-                    #Whole tribe is required
+                    self._blit_text(self.Txt.get_txt('controls',1006)) #Whole tribe is required
                 else:
-                    self._blit_text(self.Txt.get_txt('controls',1005))
-                    #insufficien resource
+                    self._blit_text(self.Txt.get_txt('controls',1005)) #Insufficient resources
                 self._next_line(self.HeaderText.get_height())
                 self._blit_icon('grayed_yes')
             return None
@@ -673,6 +680,212 @@ class Controls:
         self._blit_button(NO,NO,MENU_COLUMNS[5][0])
         self._next_line()
 
+        self._compleate_menu()
+
+        return None
+
+    def _blit_workshop_menu(self):
+        '''
+        (None) -> None
+
+        Blits Workshop Menu.
+        '''
+        def id_to_item():
+            '''
+            (None) -> None
+
+            If item in selected slot is just ID than creates Item object with
+            this ID.
+            '''
+            if self.Tribe.Workshop.selected and \
+                type(self.Tribe.Workshop.selected) == type(1):
+                    self.Tribe.Workshop.selected = \
+                        items.Item(self.Tribe.Workshop.selected)
+
+            return None
+
+        def blit_selected():
+            '''
+            (None) -> None
+
+            Blits item icon that selected for crafting.
+            '''
+            self._next_line(BUTTON_SIZE // 2)
+            if self.Tribe.Workshop.selected:
+                item = self.Tribe.Workshop.selected
+                pic = 'item' + str(item.id)
+            else:
+                pic = 'goods'
+            if self.Tribe.Workshop.production:
+                self._blit_icon(pic,MENU_COLUMNS[1][0] // 2)
+            else:
+                self._blit_button(pic,'item_catalog',MENU_COLUMNS[1][0] // 2)
+            #blits extra frame
+            indent = LINE_WIDTH*2
+            self._blit_frame(self.menu_line[0]-indent + MENU_COLUMNS[1][0] // 2,
+                             self.menu_line[1]- indent,
+                             BUTTON_SIZE + indent * 2,
+                             BUTTON_SIZE + indent * 2)
+            return None
+
+        def blit_points():
+            '''
+            (None) -> None
+
+            Blits amount of points that requires or remains for selected
+            item crafting.
+            '''
+            if not self.Tribe.Workshop.selected:
+                return None
+            item = self.Tribe.Workshop.selected
+            self._blit_icon('point',MENU_COLUMNS[2][0])
+            if self.Tribe.Workshop.production:
+                text = 'x' + str(self.Tribe.Workshop.points) + \
+                       '/' + str(item.ingredients['points'])
+            else:
+                text = 'x' + str(item.ingredients['points'])
+            self._blit_text(text,'header',MENU_COLUMNS[3])
+
+            return None
+
+        def get_ingredient(ingredient):
+            '''
+            (str or int) -> int
+
+            Gets ingredient amount from tribe.
+            '''
+            if type(ingredient) == type(''):
+                amount = self.Tribe.get_resource(ingredient)
+            elif type(ingredient) == type(1):
+                amount = self.Tribe.get_item_amount(ingredient)
+            else:
+                assert False, 'Incorrect resource type is requested from tribe'
+
+            return amount
+
+        def blit_ingredients():
+            '''
+            (dict) -> None
+
+            Blits ingredients for item in Workshop 'selected' slot
+            '''
+            if self.Tribe.Workshop.selected:
+                ingredients = self.Tribe.Workshop.selected.ingredients
+                for ingredient in ingredients:
+                    if ingredient == 'points':
+                        continue
+                    if type(ingredient) == type(1):
+                        icon = 'item' + str(ingredient)
+                    else:
+                        icon = ingredient
+                    self._blit_icon(icon,MENU_COLUMNS[0][0])
+                    required = ingredients[ingredient]
+                    available =get_ingredient(ingredient)
+                    text = 'x' + str(available) + ' / ' + str(required)
+                    self._blit_text(text, 'header', MENU_COLUMNS[1])
+                    if available >= required:
+                        self._blit_icon(YES, MENU_COLUMNS[3][0])
+                    else:
+                        self._blit_icon('grayed_yes',MENU_COLUMNS[3][0])
+                    self._next_line()
+            else:
+                self._blit_text(self.Txt.get_txt('controls',1007),offset=(MENU_COLUMNS[0][0],-6)) #Select item
+                #self._next_line()
+
+            return None
+
+        def blit_tribesmen():
+            '''
+            (None) -> None
+
+            If party is build for Workshop blits tribesman icon and amount
+            of participants. Else blits button which evokes party builder.
+            '''
+            for party in self.Tribe.parties:
+                if party.purpose == PROCESS_WORKSHOP:
+                    self._blit_icon('tribesman')
+                    amount = str(len(party.members))
+                    self._blit_text('x' + amount,'header',MENU_COLUMNS[1])
+                    return None
+            else:
+                self._blit_button('tribesman', PROCESS_WORKSHOP)
+            return None
+
+        def blit_yes_no():
+            '''
+            (None) -> None
+
+            When item is not selected or Tribe has no required amount
+            of ingredients - grayed out yes icon is blited. If all
+            conditions are satisfied  - YES button is blited. When Workshop
+            is in production state - cancel button is blited.
+            '''
+            position = MENU_COLUMNS[3][0]
+            if self.Tribe.Workshop.production:
+                self._blit_button(NO,NO,position)
+            elif self.Tribe.Workshop.selected and self.Tribe.Workshop.conditions():
+                self._blit_button(YES, YES, position)
+            else:
+                self._blit_icon('grayed_yes',position)
+
+            return None
+
+        #method body
+        id_to_item()
+        self._prepare_menu()
+        blit_selected()
+        blit_points()
+        self._next_line()
+        self._blit_delimiter()
+        if not self.Tribe.Workshop.production:
+            blit_ingredients()
+        self._blit_delimiter()
+        blit_tribesmen()
+        blit_yes_no()
+        self._blit_button('next',NO,MENU_COLUMNS[-1][0])
+        self._next_line()
+
+        self._compleate_menu()
+
+        return None
+
+    def _blit_item_catalog(self):
+        '''
+        (None) -> None
+
+        Blits Item Catalog for item selection.
+        '''
+
+        def parse_commands():
+            '''
+
+            '''
+            if 'selected' in self.called_method:
+                id = self.called_method[9:]
+                self.item_catalog_data['object'].selected = int(id)
+
+            return None
+
+        parse_commands()
+        self._prepare_menu()
+
+        for item_id in self.item_catalog_data['item_dict']['weapon']:
+            self._blit_button('item' + str(item_id),'selected_' + str(item_id))
+            self._next_line()
+        self._blit_delimiter()
+        if self.item_catalog_data['object'].selected:
+            selected = self.item_catalog_data['object'].selected
+            if type(selected) == type(1):
+                id = str(selected)
+            else:
+                id = str(selected.id)
+            self._blit_icon('item' + id)
+            self._next_line()
+            self._blit_button(YES, YES)
+        else:
+            self._blit_icon('grayed_yes')
+        self._blit_button(NO, NO, MENU_COLUMNS[-1][0])
+        self._next_line()
         self._compleate_menu()
 
         return None
@@ -893,7 +1106,7 @@ class Controls:
 
             Handles all cases when pressed button is YES.
             '''
-            def _yes_for_party():
+            def yes_for_party():
                 '''
                 (None) -> None
 
@@ -911,7 +1124,7 @@ class Controls:
                     self.Tribe.build_send_query()
                 return None
 
-            def _yes_for_popup():
+            def yes_for_popup():
                 '''
                 (None) -> None
 
@@ -927,7 +1140,7 @@ class Controls:
                         self.Core.map[x][y].blit_markers(self.ScreenSurface)
                 return None
 
-            def _yes_for_skills():
+            def yes_for_skills():
                 '''
                 (None) -> None
 
@@ -941,13 +1154,37 @@ class Controls:
                 self.menu_mode = 'general'
                 return None
 
+            def yes_for_workshop():
+                '''
+                (None) -> None
+
+                Starts item crafting process.
+                '''
+                self.Tribe.Workshop.start_crafting()
+                return None
+
+            def yes_for_item_catalog():
+                '''
+                (None) -> None
+
+                Reverts to menu that evokes Item Catalog with id that pass to
+                corresponding object 'selected parameter'.
+                '''
+                self.menu_mode = self.item_catalog_data['revert_menu']
+
+                return None
+
             if self.menu_mode == 'party_builder' and\
                     not self.Party.is_valid(self.Tribe):
-                _yes_for_party()
+                yes_for_party()
             elif self.menu_mode == 'popup':
-                _yes_for_popup()
+                yes_for_popup()
             elif self.menu_mode == SKILLS_MENU:
-                _yes_for_skills()
+                yes_for_skills()
+            elif self.menu_mode == 'item_catalog':
+                yes_for_item_catalog()
+            elif self.menu_mode == 'workshop':
+                yes_for_workshop()
 
             return None
 
@@ -957,11 +1194,11 @@ class Controls:
 
             Handles all cases when pressed button is NO.
             '''
-            def _no_for_party():
+            def no_for_party():
                 '''
                 (None) -> None
 
-                Clicking no for party builder menu.
+                Clicking NO in party builder menu.
                 Deletes draft party instance.
                 '''
                 del self.Party
@@ -969,21 +1206,47 @@ class Controls:
                 self.menu_mode = 'general'
                 return None
 
-            def _no_for_skills():
+            def no_for_skills():
                 '''
                 (None) -> None
 
-                Clicking no for skills menu.
+                Clicking NO in skills menu.
                 Deletes draft party instance.
                 '''
                 self.menu_mode = 'general'
                 self.Tribe.SkillTree.learned = None
                 return None
 
+            def no_for_workshop():
+                '''
+                (None) -> None
+
+                Clicking NO in workshop menu.
+                Cancels item creation.
+                '''
+                self.menu_mode = 'general'
+                return None
+
+            def no_for_item_catalog():
+                '''
+                (None) -> None
+
+                Reverts to menu that evokes Item Catalog with clearing
+                id that pass to corresponding object 'selected' parameter.
+                '''
+                self.item_catalog_data['object'].selected = None
+                self.menu_mode = self.item_catalog_data['revert_menu']
+
+                return None
+
             if self.menu_mode == 'party_builder':
-                _no_for_party()
+                no_for_party()
             elif self.menu_mode == SKILLS_MENU:
-                _no_for_skills()
+                no_for_skills()
+            elif self.menu_mode == 'workshop':
+                no_for_workshop()
+            elif self.menu_mode == 'item_catalog':
+                no_for_item_catalog()
 
             return None
 
@@ -1037,6 +1300,36 @@ class Controls:
 
             return None
 
+        def workshop():
+            '''
+            (None) -> None
+
+            Switch controls to workshop menu display mode.
+            '''
+            self.menu_mode = 'workshop'
+
+            return None
+
+        def item_catalog():
+            '''
+            (None) -> None
+
+            Switch controls to Item Catalog menu display mode with validation
+            of item_catalog_data dictionary content
+            '''
+            def workshop():
+                self.item_catalog_data = {'object': self.Tribe.Workshop,
+                                  'item_dict': {'weapon':[i for i in range(1,8)]}, #self.Tribe.SkillTree.available_items,
+                                  'revert_menu': 'workshop'}
+                return None
+
+            if self.menu_mode == 'workshop':
+                workshop()
+            self.menu_mode = 'item_catalog'
+            self.menu_submode = 'general'
+
+            return None
+
         def _print_parties():
             '''
             (None) -> None
@@ -1065,6 +1358,10 @@ class Controls:
                         _skills_menu()
                     elif self.called_method == 'next':
                         next_turn()
+                    elif self.called_method == 'workshop':
+                        workshop()
+                    elif self.called_method == 'item_catalog':
+                        item_catalog()
         else:
             if self.menu_mode == 'general':
                 (x,y) = tools.pxToCellCoordinate(position)

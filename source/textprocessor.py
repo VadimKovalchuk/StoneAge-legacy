@@ -4,16 +4,15 @@ from source import skilltree
 #CONSTANTS
 #Uplading constants from setup.ini file
 from source import tools
-constants = {}
 constants = tools.Constants()
 '''___________________________________________________________'''
 #Active language
 LANGUAGE        = constants['LANGUAGE']
-DB_DIR = 'database\\'
+DB_DIR          = constants['DB_DIR']
 del constants
 
 POPUP_ORDER ={
-    'daily':    [2001,4001,4004,4003,4002,3001,3002],
+    'daily':    [2001,4001,4004,4003,4002,4007,4008,3001,3002],
     'nightly':  [4005,3003,4006,3004]
 }
 '''___________________________________________________________'''
