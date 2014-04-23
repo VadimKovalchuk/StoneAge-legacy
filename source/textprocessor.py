@@ -1,5 +1,6 @@
 import sqlite3
 from source import skilltree
+from source import items
 
 #CONSTANTS
 #Uplading constants from setup.ini file
@@ -104,6 +105,11 @@ class TextProcessor:
                 text += self.get_txt('controls', skill.learned) + '.\n'
             else:
                 assert False, 'Incorrect Skill popup parameter:' + popup_type
+        elif 'item' in popup_type:
+            assert 'item' in message_dict, 'Popup for Item is called, but ID is not passed.'
+            item = items.Item(message_dict['item'])
+            text += self.get_txt('controls', item.name) + '.\n'
+            text += self.get_txt('controls', item.description) + '.\n'
 
         obj.popup = {}
         obj.raise_popup = False

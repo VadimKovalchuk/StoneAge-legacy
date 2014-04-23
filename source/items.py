@@ -24,7 +24,7 @@ class Item:
         self.owner = None                   #Item owner
         self.name = item['name']            #Item name
         self.type = item['type']            #Item type
-        self.points = item['points']        #e.g. amount of damage for weapon or armor for wear.
+        self.points = item['points']        #e.g. amount of damage for weapon or armor.
         self.durability = item['durability']#Damage amount that can be dealt or taken by item.
         self.consumable = item['consumable']#Consumable item list that required for item usage.
         self.amount = item['amount']        #Consumable items and ingredients can be stacked.
@@ -76,7 +76,7 @@ class Item:
 
         If current item is a weapon randomly returns damage from points list.
         '''
-        assert self.type == 'weapon','Non weapon item is called for hit method'
+        assert self.type in ('weapon', ''),'Non weapon item is called for hit method'
         assert self.owner,'Item usage without owner'
         if self.consumable:
             pass
@@ -113,8 +113,8 @@ class Item:
 
     def __str__(self):
         string = self.get_name()
-        if self.type == 'consumable':
-            string += 'x' + str(self.amount)
+        if self.type in ('consumable','ammo'):
+            string += ''.join('x',str(self.amount),')')
         else:
             string += '('+ str(self.durability) + ')'
 

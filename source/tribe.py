@@ -15,8 +15,8 @@ SEND_INTERVAL = constants['SEND_INTERVAL']        #Default is 700
 #Resource types
 FOOD =          constants['FOOD']        #Default is 'food'
 STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'
-BONES =         constants['BONES']       #Default is 'bones'
-HIDDEN_BONES =  constants['HIDDEN_BONES']#Default is 'hidden_bones'
+BONE =         constants['BONE']         #Default is 'bone'
+HIDDEN_BONE =  constants['HIDDEN_BONE']  #Default is 'hidden_bone'
 MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
 SKIN =          constants['SKIN']        #Default is 'skin'
 WOOD =          constants['WOOD']        #Default is 'wood'
@@ -59,8 +59,8 @@ class Tribe:
         self.resources = {
             FOOD:        [0,0,0],
             STOCKED_FOOD:[0,0,0,0,0,0,0,0,0],
-            HIDDEN_BONES:[0,0,0],
-            BONES:       0,
+            HIDDEN_BONE:[0,0,0],
+            BONE:       0,
             MOIST_SKIN:  [0,0,0],
             SKIN:        0,
             WOOD:        0,
@@ -271,7 +271,22 @@ class Tribe:
         amount = 0
         for item in self.inventory:
             if item.id == id:
-                amount += 1
+                amount += item.amount
+        return amount
+
+    def get_ingredient_amount(self, ingredient):
+        '''
+        (str or int) -> int
+
+        Gets ingredient amount from tribe.
+        '''
+        if type(ingredient) == type(''):
+            amount = self.get_resource(ingredient)
+        elif type(ingredient) == type(1):
+            amount = self.get_item_amount(ingredient)
+        else:
+            assert False, 'Incorrect resource type is requested from tribe'
+
         return amount
 
     def add_resource(self, type, amount):
@@ -280,19 +295,61 @@ class Tribe:
 
         Adds passed number to specified resource
         '''
-        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONES):
+        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONE):
             self.resources[type][0] += amount
             self.add_statistics(type, amount)
         elif type == 'hunt':
             self.add_statistics('hunt', amount)
             self.resources[FOOD][0] += amount
             self.add_statistics(FOOD, amount)
-            self.resources[HIDDEN_BONES][0] += amount // 2
+            self.resources[HIDDEN_BONE][0] += amount // 2
             self.resources[MOIST_SKIN][0] += amount // 4
             self.add_statistics(MOIST_SKIN, amount // 4)
         else:
             self.resources[type] += amount
             self.add_statistics(type, amount)
+        return None
+
+    def add_items(self, items):
+        '''
+        (Item or list or tuple) -> None
+
+        Adds item or items to tribe inventory. Consumable items and ammo
+        are stacking.
+        '''
+        def add_stack(item):
+            '''
+            (Item) -> None
+
+            Adds stackable item to tribe inventory. If this type already
+            in inventory - just increases its amount.
+            '''
+            in_inventory = self.get_item_amount(item)
+            if in_inventory:
+                inventory_item = self.find_item(item.id)
+                inventory_item.amount += item.amount
+            else:
+                self.inventory.append(item)
+            return None
+
+        def add_item(item):
+            '''
+            (Item) -> None
+
+            Adds item to inventory. Stackable items are counted as single with
+            increased amount value.
+            '''
+            if item.type in ('consumable', 'ammo'):
+                add_stack(item)
+            else:
+                self.inventory.append(item)
+            return None
+
+        if type(items) in (type([]), type(())):
+            for item in items:
+                add_item(item)
+        else:
+            add_item(items)
         return None
 
     def add_statistics(self, stat_parameter, amount):
@@ -316,7 +373,7 @@ class Tribe:
         Adds passed number to specified resource
         '''
         rest = amount
-        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONES):
+        if type in (STOCKED_FOOD,FOOD,MOIST_SKIN,HIDDEN_BONE):
             consumable = self.resources[type]
             for i in range(len(consumable)-1,-1,-1):
                 if consumable[i] == 0:
@@ -350,7 +407,7 @@ class Tribe:
                 return item
         return None
 
-    def consume_items(self, item_id, amount = 1):
+    def remove_items(self, item_id, amount = 1):
         '''
         (int, int) -> None
 
@@ -358,7 +415,12 @@ class Tribe:
         '''
         for i in range(0,amount):
             item = self.find_item(item_id)
-            self.inventory.remove(item)
+            if item.type in ('ammo', 'consumable'):
+                item.amount -= 1
+                if item.amount == 0:
+                    self.inventory.remove(item)
+            else:
+                self.inventory.remove(item)
 
         return None
 
@@ -473,7 +535,7 @@ class Workshop:
         '''
         assert self.selected.ingredients, 'Item is not selected in Workshop.'
         for ingredient in self.selected.ingredients:
-            if ingredient == 'points':
+            if ingredient == 'point':
                 continue
             if type(ingredient) == type(1):
                 available = self.Tribe.get_item_amount(ingredient)
@@ -513,18 +575,21 @@ class Workshop:
 
             Updates Tribes statistics with respect to new item type.
             '''
-            if 'goods' in self.Tribe.statistics:
-                self.Tribe.statistics['goods'] += 1
-            else:
+            item_type = self.selected.type
+            if 'goods' not in self.Tribe.statistics:
                 self.Tribe.statistics['goods'] = 0
+            self.Tribe.statistics['goods'] += 1
+            if item_type not in self.Tribe.statistics:
+                self.Tribe.statistics[item_type] = 0
+            self.Tribe.statistics[item_type] += 1
             return None
 
         if not (self.production or self.selected):
             return False
         self.points += points
-        required = self.selected.ingredients['points']
+        required = self.selected.ingredients['point']
         if self.points >= required:
-            self.Tribe.inventory.append(self.selected)
+            self.Tribe.add_items(self.selected)
             update_statistics(self.selected)
             self.reset()
             return True
@@ -540,13 +605,13 @@ class Workshop:
         assert self.conditions(), 'Incorrect crafting parameters'
 
         for ingredient in self.selected.ingredients:
-            if ingredient == 'points':
+            if ingredient == 'point':
                 continue
             amount = self.selected.ingredients[ingredient]
             if type(ingredient) == type(''):
                 self.Tribe.consume_resource(ingredient, amount)
             else:
-                self.Tribe.consume_items(ingredient, amount)
+                self.Tribe.remove_items(ingredient, amount)
         self.production = True
         return None
 

@@ -30,8 +30,8 @@ RICH = constants['RICH']        #Default is 'rich'
 #Resource types
 FOOD =          constants['FOOD']        #Default is 'food'
 STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'
-BONES =         constants['BONES']       #Default is 'bones'
-HIDDEN_BONES =  constants['HIDDEN_BONES']#Default is 'hidden_bones'
+BONE =         constants['BONE']       #Default is 'bone'
+HIDDEN_BONE =  constants['HIDDEN_BONE']#Default is 'hidden_bone'
 MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
 SKIN =          constants['SKIN']        #Default is 'skin'
 WOOD =          constants['WOOD']        #Default is 'wood'
@@ -40,7 +40,7 @@ STONE =         constants['STONE']       #Default is 'stone'
 DB_DIR = constants['DB_DIR']
 del constants
 
-OPEN_ALL = True
+OPEN_ALL = False
 BUTTON_SIZE = 35
 LINE_WIDTH = 2
 FIRST_TEXT_COLUMN = (int(BUTTON_SIZE *1.1), BUTTON_SIZE // 3)
@@ -317,8 +317,8 @@ class Controls:
             Blits bones amount and button for workshop.
             '''
             if is_visible(2): #Hunting
-                self._blit_icon(BONES)
-                self._blit_text('x ' + str(self.Tribe.get_resource(BONES)),
+                self._blit_icon(BONE)
+                self._blit_text('x ' + str(self.Tribe.get_resource(BONE)),
                                 'header', FIRST_TEXT_COLUMN)
             else:
                 return False
@@ -370,8 +370,7 @@ class Controls:
                 self._blit_icon(STONE)
                 self._blit_text('x ' + str(self.Tribe.get_resource(STONE)),
                                 'header', FIRST_TEXT_COLUMN)
-
-            return True
+                return True
 
         def tribe_line():
             '''
@@ -623,18 +622,20 @@ class Controls:
             '''
             self._blit_icon('skill' + str(skill.id))
             price = skill.get_price()
-            counter = 0
             for resource in price:
                 if type(resource) == type(''):
-                    self._blit_icon(resource, MENU_COLUMNS[counter * 2 + 1][0])
+                    self._blit_icon(resource, MENU_COLUMNS[1][0])
                 else:
-                    self._blit_icon('item' + str(resource), MENU_COLUMNS[counter * 2 + 1][0])
-                self._blit_text('x' + str(price[resource]),'header',
-                                MENU_COLUMNS[counter * 2 + 2])
-                counter += 1
-                if counter > 1:
-                    self._next_line()
-                    counter = 0
+                    self._blit_icon('item' + str(resource), MENU_COLUMNS[1][0])
+                available = self.Tribe.get_ingredient_amount(resource)
+                required = price[resource]
+                text = 'x' + str(available) + '/' + str(required)
+                self._blit_text(text,'header', MENU_COLUMNS[2])
+                if available >= required:
+                    self._blit_icon(YES, MENU_COLUMNS[-1][0])
+                else:
+                    self._blit_icon('grayed_yes',MENU_COLUMNS[-1][0])
+                self._next_line()
 
             return None
 
@@ -651,9 +652,7 @@ class Controls:
             else:
                 if len(self.Tribe.get_free_tribesmen()) < len(self.Tribe.population):
                     self._blit_text(self.Txt.get_txt('controls',1006)) #Whole tribe is required
-                else:
-                    self._blit_text(self.Txt.get_txt('controls',1005)) #Insufficient resources
-                self._next_line(self.HeaderText.get_height())
+                    self._next_line(self.HeaderText.get_height())
                 self._blit_icon('grayed_yes')
             return None
 
@@ -675,7 +674,6 @@ class Controls:
         self._blit_delimiter()
         if self.Tribe.SkillTree.learned:
             _blit_selected(self.Tribe.SkillTree.learned)
-            self._next_line()
             _yes_conditions()
         self._blit_button(NO,NO,MENU_COLUMNS[5][0])
         self._next_line()
@@ -741,27 +739,12 @@ class Controls:
             self._blit_icon('point',MENU_COLUMNS[2][0])
             if self.Tribe.Workshop.production:
                 text = 'x' + str(self.Tribe.Workshop.points) + \
-                       '/' + str(item.ingredients['points'])
+                       '/' + str(item.ingredients['point'])
             else:
-                text = 'x' + str(item.ingredients['points'])
+                text = 'x' + str(item.ingredients['point'])
             self._blit_text(text,'header',MENU_COLUMNS[3])
 
             return None
-
-        def get_ingredient(ingredient):
-            '''
-            (str or int) -> int
-
-            Gets ingredient amount from tribe.
-            '''
-            if type(ingredient) == type(''):
-                amount = self.Tribe.get_resource(ingredient)
-            elif type(ingredient) == type(1):
-                amount = self.Tribe.get_item_amount(ingredient)
-            else:
-                assert False, 'Incorrect resource type is requested from tribe'
-
-            return amount
 
         def blit_ingredients():
             '''
@@ -772,7 +755,7 @@ class Controls:
             if self.Tribe.Workshop.selected:
                 ingredients = self.Tribe.Workshop.selected.ingredients
                 for ingredient in ingredients:
-                    if ingredient == 'points':
+                    if ingredient == 'point':
                         continue
                     if type(ingredient) == type(1):
                         icon = 'item' + str(ingredient)
@@ -780,7 +763,7 @@ class Controls:
                         icon = ingredient
                     self._blit_icon(icon,MENU_COLUMNS[0][0])
                     required = ingredients[ingredient]
-                    available =get_ingredient(ingredient)
+                    available =self.Tribe.get_ingredient_amount(ingredient)
                     text = 'x' + str(available) + ' / ' + str(required)
                     self._blit_text(text, 'header', MENU_COLUMNS[1])
                     if available >= required:
@@ -855,35 +838,165 @@ class Controls:
 
         Blits Item Catalog for item selection.
         '''
-
         def parse_commands():
             '''
+            (None) -> None
 
+            When item button is pressed - assigns its id to selected
+            attribute of issued object
             '''
-            if 'selected' in self.called_method:
+            if 'category' in self.called_method:
+                self.menu_submode = self.called_method[9:]
+            elif 'selected' in self.called_method:
                 id = self.called_method[9:]
                 self.item_catalog_data['object'].selected = int(id)
+            elif 'info' in self.called_method:
+                item_id = int(self.called_method[10:])
+                self.Core.popup = {'type':['item_info'],
+                                   'item':item_id,
+                                   'picture':'item' + str(item_id)}
+                self.Core.raise_popup = True
 
             return None
 
-        parse_commands()
-        self._prepare_menu()
+        def is_one_category():
+            '''
+            (None) -> None
 
-        for item_id in self.item_catalog_data['item_dict']['weapon']:
-            self._blit_button('item' + str(item_id),'selected_' + str(item_id))
-            self._next_line()
-        self._blit_delimiter()
-        if self.item_catalog_data['object'].selected:
-            selected = self.item_catalog_data['object'].selected
-            if type(selected) == type(1):
-                id = str(selected)
+            If item_dict have only one category, proceeds directly to it
+            '''
+            item_dict = self.item_catalog_data['item_dict']
+            if len(item_dict) == 1:
+                category = list(item_dict.keys())
+                self.menu_submode = category[0]
+
+            return None
+
+        def blit_item_info(id):
+            '''
+            (int) -> None
+
+            Blits item data according to its type.
+            '''
+            def blit_damage_range(column):
+                '''
+                (int) -> None
+
+                Blits item damage range starting from passed column.
+                '''
+                min = str(item.points[0])
+                max = str(item.points[-1])
+                text = ' '.join((min, '-',max))
+                self._blit_icon('hit_point',MENU_COLUMNS[column][0])
+                self._blit_text(text,'header',MENU_COLUMNS[column + 1])
+                return None
+
+            def blit_amount():
+                '''
+                (None) -> None
+
+                Blits amount and of item.
+                '''
+                amount = str(item.amount)
+                text = ''.join((' x',amount))
+                self._blit_text(text,'header',MENU_COLUMNS[1])
+                return None
+
+            def weapon():
+                blit_damage_range(1)
+                return  None
+
+            def armor():
+                '''
+                (None) -> None
+
+                Blits item amount of armor
+                '''
+                armor = str(item.points[0])
+                text = ''.join(('x',armor))
+                self._blit_icon('hit_point',MENU_COLUMNS[1][0])
+                self._blit_text(text,'header',MENU_COLUMNS[2])
+                return None
+
+            def ammo():
+                blit_amount()
+                blit_damage_range(2)
+                return None
+
+            def consumable():
+                blit_amount()
+                return None
+
+            blit_type = {'weapon':weapon, 'range':weapon, 'armor':armor,
+                         'ammo':ammo, 'consumable':consumable}
+            item = items.Item(id)
+            blit_type[item.type]()
+
+            return None
+
+        def blit_categories():
+            '''
+            (None) -> None
+
+            Blits available categories in item dictionary
+            '''
+            for category in self.item_catalog_data['item_dict']:
+                self._blit_button(category,'category_' + category)
+                self._next_line()
+            return None
+
+        def blit_subcategory():
+            '''
+            (None) -> None
+
+            Blits subcategory that defined in menu_submode attribute of controls
+            '''
+            for item_id in self.item_catalog_data['item_dict'][self.menu_submode]:
+                self._blit_button('item' + str(item_id),'selected_' + str(item_id))
+                blit_item_info(item_id)
+                self._blit_button('question','info_item_' + str(item_id),
+                                  MENU_COLUMNS[-1][0])
+                self._next_line()
+            return None
+
+        def blit_selected():
+            '''
+            (None) -> None
+
+            Blits selected object and its data separately
+            '''
+            if self.item_catalog_data['object'].selected:
+                selected = self.item_catalog_data['object'].selected
+                if type(selected) == type(1):
+                    id = selected
+                else:
+                    id = selected.id
+                self._blit_icon('item' + str(id))
+                blit_item_info(id)
+                self._next_line()
+            return None
+
+        def blit_yes():
+            '''
+            (None) -> None
+
+            If item is selected - blits active button. Otherwise - grayed out
+            '''
+            if self.item_catalog_data['object'].selected:
+                self._blit_button(YES, YES)
             else:
-                id = str(selected.id)
-            self._blit_icon('item' + id)
-            self._next_line()
-            self._blit_button(YES, YES)
+                self._blit_icon('grayed_yes')
+
+        parse_commands()
+        is_one_category()
+        self._prepare_menu()
+        if self.menu_submode == 'general':
+            blit_categories()
         else:
-            self._blit_icon('grayed_yes')
+            blit_subcategory()
+        self._blit_delimiter()
+        blit_selected()
+        blit_yes()
         self._blit_button(NO, NO, MENU_COLUMNS[-1][0])
         self._next_line()
         self._compleate_menu()
@@ -1318,9 +1431,14 @@ class Controls:
             of item_catalog_data dictionary content
             '''
             def workshop():
+                if OPEN_ALL:
+                    item_dict = tools.all_items_catalog()
+                else:
+                    item_dict = self.Tribe.SkillTree.available_items
                 self.item_catalog_data = {'object': self.Tribe.Workshop,
-                                  'item_dict': {'weapon':[i for i in range(1,8)]}, #self.Tribe.SkillTree.available_items,
+                                  'item_dict':item_dict,
                                   'revert_menu': 'workshop'}
+                self.menu_submode = 'general'
                 return None
 
             if self.menu_mode == 'workshop':

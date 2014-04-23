@@ -249,13 +249,8 @@ class Skill:
         '''
         price = self.get_price()
         for resource in price:
-            if type(resource) == type(''):
-                if price[resource] > self.SkillTree.Tribe.get_resource(resource):
+            if price[resource] > self.SkillTree.Tribe.get_ingredient_amount(resource):
                     return False
-            else:
-                if price[resource] > self.SkillTree.Tribe.get_item_amount(resource):
-                    return False
-
         return True
 
     def __str__(self):

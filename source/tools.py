@@ -229,6 +229,24 @@ def file_exists(path ,filename):
 
     return filename in files
 
+def all_items_catalog():
+    '''
+
+    '''
+    db = sqlite3.connect(DB_DIR + 'core.db')
+    cursor = db.cursor()
+    cursor.execute('SELECT id, type FROM items ')
+    items = cursor.fetchall()
+    cursor.close()
+    db.close()
+    catalog = {}
+    for item in items:
+        id, type = item
+        if type not in catalog:
+            catalog[type] = []
+        catalog[type].append(id)
+    return catalog
+
 def db_backup():
     '''
     (None) -> None

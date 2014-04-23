@@ -14,12 +14,12 @@ CAMP = constants['CAMP']        #Default is 'camp'
 #Resource types
 FOOD =          constants['FOOD']        #Default is 'food'
 STOCKED_FOOD =  constants['STOCKED_FOOD']#Default is 'stocked_food'
-HIDDEN_BONES =  constants['HIDDEN_BONES']#Default is 'hidden_bones'
-BONES =         constants['BONES']       #Default is 'bones'
+HIDDEN_BONE =  constants['HIDDEN_BONE']  #Default is 'hidden_bone'
+BONE =         constants['BONE']         #Default is 'bones'
 MOIST_SKIN =    constants['MOIST_SKIN']  #Default is 'moist_skin'
 SKIN =          constants['SKIN']        #Default is 'skin'
 WOOD =          constants['WOOD']        #Default is 'wood'
-ROCK =          constants['STONE']        #Default is 'rock'
+ROCK =          constants['STONE']       #Default is 'rock'
 #Resource richness in land cell
 EMPTY = constants['EMPTY']      #Default is 'empty'
 LOW = constants['LOW']          #Default is 'low'
@@ -197,7 +197,7 @@ class Rules:
                 if type(resource) == type(''):
                     Party.Tribe.consume_resource(resource,price[resource])
                 else:
-                    Party.Tribe.consume_items(resource,price[resource])
+                    Party.Tribe.remove_items(resource,price[resource])
             Party.Tribe.SkillTree.master_skill()
             Party.Tribe.popup = {'type':['skill_done'],'skill':skill.id,
                                        'picture':'skill' + str(skill.id)}
@@ -258,7 +258,7 @@ class Rules:
         '''
         length = len(Tribe.resources[FOOD])
         food_list = Tribe.resources[FOOD]
-        hidden_bones_list = Tribe.resources[HIDDEN_BONES]
+        hidden_bones_list = Tribe.resources[HIDDEN_BONE]
         rest = amount
 
         for i in range(length-1,-1,-1):
@@ -274,13 +274,13 @@ class Rules:
             if hidden_bones_list[i] == 0:
                 pass
             elif reduced // 2 > hidden_bones_list[i]:
-                Tribe.resources[BONES] += hidden_bones_list[i]
-                Tribe.add_statistics(BONES,hidden_bones_list[i])
+                Tribe.resources[BONE] += hidden_bones_list[i]
+                Tribe.add_statistics(BONE,hidden_bones_list[i])
                 hidden_bones_list[i] = 0
             else:
                 hidden_bones_list[i] -= reduced // 2
-                Tribe.resources[BONES] += reduced //2
-                Tribe.add_statistics(BONES,reduced //2)
+                Tribe.resources[BONE] += reduced //2
+                Tribe.add_statistics(BONE,reduced //2)
 
             if rest ==0:
                 return 0
@@ -363,7 +363,7 @@ class Rules:
 
         Shifts food and expiring date materials lists to one item up
         '''
-        for res in (FOOD,HIDDEN_BONES,MOIST_SKIN,STOCKED_FOOD):
+        for res in (FOOD,HIDDEN_BONE,MOIST_SKIN,STOCKED_FOOD):
             for i in range(len(Tribe.resources[res])-1,0,-1):
                 Tribe.resources[res][i] = Tribe.resources[res][i-1]
             Tribe.resources[res][0] = 0
@@ -409,7 +409,7 @@ class Rules:
 
             When Hunting  is learned bones amount should be cleared.
             '''
-            Tribe.resources[BONES] = 0
+            Tribe.resources[BONE] = 0
 
             return None
 
