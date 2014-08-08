@@ -216,6 +216,21 @@ def pxToCellCoordinate(coordinates):
                       (coordinates[1] - coordinates[1] % LAND_CELL_WIDTH) // LAND_CELL_WIDTH)
     return px_coordinates
 
+def number_to_str(number):
+    '''
+    (int) -> str
+
+    Transform number in range 0..999 into string but always with three digits.
+    '''
+    assert number < 1000, \
+        'Too big number is passed to "number_to_str" function in tools'
+    if number < 10:
+        return '00' + str(number)
+    elif number < 100:
+        return '0' + str(number)
+    else:
+        return str(number)
+
 def file_exists(path ,filename):
     '''
     (str,str) -> bool
@@ -242,6 +257,8 @@ def all_items_catalog():
     catalog = {}
     for item in items:
         id, type = item
+        if id in [42,43,44,45,46,47,48]:
+            continue
         if type not in catalog:
             catalog[type] = []
         catalog[type].append(id)

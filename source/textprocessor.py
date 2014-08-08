@@ -114,6 +114,8 @@ class TextProcessor:
         obj.popup = {}
         obj.raise_popup = False
         text = self._fit_length(text)
+        if '\\n' in text:
+            text = text.replace('\\n','\n')
         #print(popup_type.capitalize() + ' popup:\n' + text)
         return text
 

@@ -65,13 +65,23 @@ def main():
         Tribe.add_tribesman("Lem")
         Tribe.add_tribesman("Nurg")
         Tribe.add_tribesman("Pela")'''
+        '''
         for i in range(1,6):
             Tribe.population[i - 1].add_item(items.Item(7))#i + 2
+        '''
         Tribe.name = tribe_name[count]
         count += 1
-
-    #itm = items.Item(1)
-    #itm.hit()
+        #
+        '''
+        item_lst = []
+        catalog = tools.all_items_catalog()
+        for category in catalog:
+            item_lst.extend(catalog[category])
+        print(len(item_lst), 'items are imported')
+        for item in item_lst:
+            Tribe.inventory.append(items.Item(item))
+        '''
+        #
 
 
     while True:

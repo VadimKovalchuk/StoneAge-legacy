@@ -70,6 +70,8 @@ GET_STONE = 'get_stone'
 SKILLS_MENU = 'skills_menu'
 FORM_PARTY = [PROCESS_MAN, PROCESS_FOOD, PROCESS_SKIN,PROCESS_HEAL,
               PROCESS_WORKSHOP, GET_FOOD, GET_HUNT, GET_WOOD, GET_STONE]
+RES_TO_ITEM = {FOOD: 42, STOCKED_FOOD: 43, MOIST_SKIN: 44,
+                SKIN: 45, WOOD: 46, STONE: 47, BONE: 48}
 #Popup
 POPUP_RECT = ((FIELD_WIDTH // 4,WINDOW_HEIGHT // 4),
               (FIELD_WIDTH // 2, WINDOW_HEIGHT //2))
@@ -106,9 +108,8 @@ class Controls:
         self.free_list = []
         self.image = Image() #Picture aliases
         self.item_catalog_data = {'object':self.Tribe.Workshop,
-                                  'item_dict':{'weapon':[1,2,3]},
-                                  'revert_menu': 'general'}
-
+                                  'item_dict':{},'revert_menu': 'general'}
+        self.inventory_data = {'selected': None}
         #Internal variables
         self.HeaderText = pygame.font.SysFont(None, 24)
         self.RegularText = pygame.font.SysFont(None, 20)
@@ -125,9 +126,11 @@ class Controls:
         '''
         (None) -> None
         '''
-        if self.update or self.Core.update or self.Core.raise_popup \
-            or self.Tribe != self.Core.active_tribe:
-            self._blit_all()
+        if self.update or \
+            self.Core.update or \
+            self.Core.raise_popup or \
+            self.Tribe != self.Core.active_tribe:
+                self._blit_all()
 
         return None
 
@@ -157,6 +160,8 @@ class Controls:
             self._blit_workshop_menu()
         elif self.menu_mode == 'item_catalog':
             self._blit_item_catalog()
+        elif self.menu_mode == 'inventory':
+            self._blit_inventory()
         else:
             assert False, 'Incorrect menu mode'
         self.update = False
@@ -383,8 +388,8 @@ class Controls:
             know_items = len(self.Tribe.SkillTree.available_items)
             if know_items or OPEN_ALL:
                 self._blit_button('workshop', 'workshop', MENU_COLUMNS[1][0])
-            #self._blit_button('inventory',PROCESS_FOOD, MENU_COLUMNS[2][0])
-
+            if self.Tribe.inventory or OPEN_ALL:
+                self._blit_button('inventory', 'inventory', MENU_COLUMNS[2][0])
             self._blit_button('next', 'next', MENU_COLUMNS[-1][0])
 
             return True
@@ -838,7 +843,7 @@ class Controls:
 
         Blits Item Catalog for item selection.
         '''
-        def parse_commands():
+        def command_handler():
             '''
             (None) -> None
 
@@ -987,7 +992,7 @@ class Controls:
             else:
                 self._blit_icon('grayed_yes')
 
-        parse_commands()
+        command_handler()
         is_one_category()
         self._prepare_menu()
         if self.menu_submode == 'general':
@@ -998,6 +1003,290 @@ class Controls:
         blit_selected()
         blit_yes()
         self._blit_button(NO, NO, MENU_COLUMNS[-1][0])
+        self._next_line()
+        self._compleate_menu()
+
+        return None
+
+    def _blit_inventory(self):
+        '''
+        (None) -> None
+
+        Blits inventory for passing items between tribe and tribesmen.
+        '''
+        def command_handler():
+            '''
+            (None) -> None
+
+            Handles changes that should be done by button presses.
+            '''
+            def item_to_res(item):
+                    '''
+                    (item) -> str
+                    '''
+                    if item:
+                        for res in RES_TO_ITEM:
+                            if RES_TO_ITEM[res] == item.id:
+                                return res
+                    return None
+
+            def tribesman():
+                '''
+                (None) -> None
+
+                Changes inventory menu submode when tribesman is selected
+                '''
+                index = int(self.called_method[-3:])
+                self.inventory_data['selected'] = self.free_list[index]
+                self.menu_submode = 'pass'
+
+                return None
+
+            def remove_item():
+                '''
+                (None) -> None
+
+                Removes specified item from selected tribesman inventory.
+                '''
+                if 'weapon' in self.called_method:
+                    weapon = self.inventory_data['selected'].weapon
+                    self.Tribe.add_items(weapon)
+                    self.inventory_data['selected'].weapon = None
+                elif 'wear' in self.called_method:
+                    wear = self.inventory_data['selected'].wear
+                    self.Tribe.add_items(wear)
+                    self.inventory_data['selected'].wear = None
+                elif 'item' in self.called_method:
+                    index = int(self.called_method[-1])
+                    item = self.inventory_data['selected'].inventory[index]
+                    res = item_to_res(item)
+                    if res:
+                        self.Tribe.add_resource(res, 1)
+                    else:
+                        self.Tribe.add_items(item)
+                    self.inventory_data['selected'].inventory[index] = None
+                return None
+
+            def equip():
+                '''
+                (None) -> None
+
+                Equips with selected item. If slot is already equipped - switches items.
+                '''
+                def man_inventory(item):
+                    '''
+                    (None) -> None
+
+                    Equips consumable item. If consumable list is full -
+                    returns last to inventory.
+                    '''
+                    inventory = self.inventory_data['selected'].inventory
+                    res = item_to_res(inventory[2])
+                    if res:
+                        self.Tribe.add_resource(res, 1)
+                    else:
+                        self.Tribe.add_items(inventory[2])
+                    inventory[2] = inventory[1]
+                    inventory[1] = inventory[0]
+                    inventory[0] = item
+
+                    return None
+
+                def pass_resource():
+                    '''
+                    (None) -> None
+
+                    If resource is selected for passing to inventory - creates corresponding
+                    item and passes it to tribesman inventory.
+                    '''
+                    for res in RES_TO_ITEM:
+                        if res in self.called_method:
+                            if res == FOOD and STOCKED_FOOD in self.called_method:
+                                continue
+                            self.Tribe.consume_resource(res, 1)
+                            man_inventory(items.Item(RES_TO_ITEM[res]))
+                            return None
+
+                if 'res' in self.called_method:
+                    pass_resource()
+                    return None
+                uniq, cons = split_items()
+                index = int(self.called_method[-3:])
+                if  index < 500:
+                    item = uniq.pop(index)
+                    self.Tribe.inventory.remove(item)
+                    item = self.inventory_data['selected'].add_item(item)
+                    self.Tribe.add_items(item)
+                else:
+                    item = cons.pop(index - 500)
+                    if item.amount > 5:
+                        item.amount -= 5
+                        man_inventory(items.Item(item.id))
+                    else:
+                        self.Tribe.inventory.remove(item)
+                        man_inventory(item)
+                return None
+
+            if 'tribesman' in self.called_method:
+                tribesman()
+            elif 'remove' in self.called_method:
+                remove_item()
+            elif 'pass' in self.called_method:
+                equip()
+
+            return None
+
+        def split_items():
+            '''
+            (None) -> list, list
+
+            Split tribe inventory list on two lists. One with consumable
+            items and other with unique.
+            '''
+            unique_lst = []
+            consumable_lst = []
+            for item in self.Tribe.inventory:
+                if item.type == 'consumable' or item.type == 'ammo':
+                    consumable_lst.append(item)
+                else:
+                    unique_lst.append(item)
+            return unique_lst, consumable_lst
+
+        def blit_tribesmen():
+            '''
+            (None) -> None
+
+            Blits free tribesmen list
+            '''
+            counter = 0
+            for tribesman in self.free_list:
+                self._blit_button('tribesman', 'tribesman' + tools.number_to_str(counter))
+                self._blit_text(tribesman.name, 'header',MENU_COLUMNS[1])
+                self._blit_equip(tribesman)
+                counter += 1
+                self._next_line()
+            return None
+
+        def blit_selected():
+            '''
+            (None) -> None
+
+            Blits free tribesmen list
+            '''
+            tribesman = self.inventory_data['selected']
+            self._blit_icon('tribesman')
+            self._blit_text(tribesman.name, 'header',MENU_COLUMNS[1])
+            self._next_line()
+            # Blits weapon button
+            if tribesman.weapon:
+                weapon = ''.join(('item', str(tribesman.weapon.id)))
+                self._blit_button(weapon,'remove_weapon')
+            else:
+                self._blit_icon('unarmed')
+            # Blits wear button
+            if tribesman.wear:
+                wear = ''.join(('item', str(tribesman.wear.id)))
+                self._blit_button(wear,'remove_wear',MENU_COLUMNS[1][0])
+            else:
+                self._blit_icon('unarmed',MENU_COLUMNS[1][0])
+
+            #Blits items buttons
+            for index,item in enumerate(tribesman.inventory):
+                if item:
+                    item_pic = ''.join(('item', str(item.id)))
+                    self._blit_button(item_pic,'remove_item'+ str(index),
+                                      MENU_COLUMNS[index + 2][0])
+                else:
+                    self._blit_icon('goods',MENU_COLUMNS[index + 2][0])
+                #counter += 1
+            self._next_line()
+            self._blit_delimiter()
+            blit_tribe_inventory()
+            #self._next_line()
+
+            return None
+
+        def blit_tribe_inventory():
+            '''
+            (None) -> None
+
+            Blits tribe inventory under selected tribesman.
+            '''
+            def blit_unique_items(items):
+                '''
+                (list of Items) -> None
+
+                Blits list of unique items.
+                '''
+                for i,item in enumerate(items):
+                    offset = MENU_COLUMNS[1][0] * (i % 5)
+                    #print(offset, str(item))
+                    item_pic = ''.join(('item', str(item.id)))
+                    index = tools.number_to_str(i)
+                    self._blit_button(item_pic, 'pass_' + index, offset)
+                    if i%5 == 4 and i != (len(items) - 1):
+                        self._next_line()
+                return None
+
+            def blit_consumable_items(items):
+                '''
+                (list of items) -> None
+
+                Blits list of consumable items.
+                '''
+                for i,item in enumerate(items):
+                    if i%2:
+                        button_offset = SECOND_BUTTON_COLUMN
+                        text_offset = SECOND_TEXT_COLUMN
+                    else:
+                        button_offset = 0
+                        text_offset = FIRST_TEXT_COLUMN
+                    item_pic = ''.join(('item', str(item.id)))
+                    index = tools.number_to_str(i + 500)
+                    self._blit_button(item_pic, 'pass_' + index, button_offset)
+                    text = ''.join((' x', str(item.amount)))
+                    self._blit_text(text, 'header',text_offset)
+                    if i%2 or i == (len(items) - 1):
+                        self._next_line()
+
+                return None
+
+            def blit_resources():
+                '''
+                (None) -> None
+
+                Blits Tribes available resources.
+                '''
+                resources = [FOOD, STOCKED_FOOD, BONE, MOIST_SKIN, SKIN, WOOD, STONE]
+                for res in resources[:]:
+                    if not self.Tribe.get_resource(res):
+                        resources.remove(res)
+                amount = len(resources) - 1
+                for i, res in enumerate(resources):
+                    offset = MENU_COLUMNS[1][0] * (i % 5)
+                    self._blit_button(res,'pass_res_' + res,offset)
+                    if i%5 ==4 or i == amount:
+                        self._next_line()
+                return None
+
+
+            if not self.Tribe.inventory:
+                return None
+            unique_lst, consumable_lst = split_items()
+            blit_unique_items(unique_lst)
+            self._next_line()
+            self._blit_delimiter()
+            blit_consumable_items(consumable_lst)
+            blit_resources()
+            self._blit_delimiter()
+
+            return None
+
+        submodes = {'tribesmen':blit_tribesmen, 'pass':blit_selected}
+        command_handler()
+        self._prepare_menu()
+        submodes[self.menu_submode]()
+        self._blit_button( 'next' ,NO , MENU_COLUMNS[-1][0])
         self._next_line()
         self._compleate_menu()
 
@@ -1198,7 +1487,7 @@ class Controls:
 
         Handles mouse input
         '''
-        def _create_party():
+        def create_party():
             '''
             (None) -> None
 
@@ -1210,10 +1499,10 @@ class Controls:
             self.Party = party.Party(self.Tribe, self.selected.cell,
                                      self.called_method)
             self.free_list = self.Tribe.get_free_tribesmen()
-            _print_parties()
+            print_parties()
             return None
 
-        def _yes_handler():
+        def yes_handler():
             '''
             (None) -> None
 
@@ -1301,7 +1590,7 @@ class Controls:
 
             return None
 
-        def _no_handler():
+        def no_handler():
             '''
             (None) -> None
 
@@ -1352,6 +1641,20 @@ class Controls:
 
                 return None
 
+            def no_for_inventory():
+                '''
+                (None) -> None
+
+                Reverts to tribesmen menu from passed man submenu and
+                exits from tribesmen menu to general.
+                '''
+                if self.menu_submode == 'pass':
+                    self.menu_submode = 'tribesmen'
+                elif self.menu_submode == 'tribesmen':
+                    self.menu_mode = 'general'
+
+                return None
+
             if self.menu_mode == 'party_builder':
                 no_for_party()
             elif self.menu_mode == SKILLS_MENU:
@@ -1360,17 +1663,19 @@ class Controls:
                 no_for_workshop()
             elif self.menu_mode == 'item_catalog':
                 no_for_item_catalog()
+            elif self.menu_mode == 'inventory':
+                no_for_inventory()
 
             return None
 
-        def _switch_submode():
+        def switch_submode():
             '''
             (None) -> None
 
             Changes submode for menus:
             - party builder
             '''
-            def _sw_party_builder():
+            def sw_party_builder():
                 '''
                 (None) -> None
 
@@ -1385,11 +1690,11 @@ class Controls:
                 return None
 
             if self.menu_mode == 'party_builder':
-                _sw_party_builder()
+                sw_party_builder()
 
             return None
 
-        def _skills_menu():
+        def skills_menu():
             '''
             (None) -> None
 
@@ -1409,7 +1714,7 @@ class Controls:
             self.Party = party.Party(self.Tribe, self.Tribe.home_cell.cell, 'idle')
             self.free_list = self.Tribe.get_free_tribesmen()
             self.Party.members = self.free_list[:]
-            _yes_handler()
+            yes_handler()
 
             return None
 
@@ -1431,6 +1736,9 @@ class Controls:
             of item_catalog_data dictionary content
             '''
             def workshop():
+                '''
+
+                '''
                 if OPEN_ALL:
                     item_dict = tools.all_items_catalog()
                 else:
@@ -1448,7 +1756,19 @@ class Controls:
 
             return None
 
-        def _print_parties():
+        def inventory():
+            '''
+            (None) -> None
+
+            Switches controls to display Inventory menu.
+            '''
+            self.menu_mode = 'inventory'
+            self.free_list = self.Tribe.get_free_tribesmen()
+            self.menu_submode = 'tribesmen'
+
+            return None
+
+        def print_parties():
             '''
             (None) -> None
 
@@ -1465,21 +1785,23 @@ class Controls:
                     self.called_method = button['method']
                     self.update = True
                     if self.called_method in FORM_PARTY:
-                        _create_party()
+                        create_party()
                     elif self.called_method == YES:
-                        _yes_handler()
+                        yes_handler()
                     elif self.called_method == NO:
-                        _no_handler()
+                        no_handler()
                     elif self.called_method == SUBMODE:
-                        _switch_submode()
+                        switch_submode()
                     elif self.called_method == SKILLS_MENU:
-                        _skills_menu()
+                        skills_menu()
                     elif self.called_method == 'next':
                         next_turn()
                     elif self.called_method == 'workshop':
                         workshop()
                     elif self.called_method == 'item_catalog':
                         item_catalog()
+                    elif self.called_method == 'inventory':
+                        inventory()
         else:
             if self.menu_mode == 'general':
                 (x,y) = tools.pxToCellCoordinate(position)

@@ -339,6 +339,8 @@ class Tribe:
             Adds item to inventory. Stackable items are counted as single with
             increased amount value.
             '''
+            if not item:
+                return None
             if item.type in ('consumable', 'ammo'):
                 add_stack(item)
             else:

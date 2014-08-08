@@ -54,7 +54,7 @@ class Tribesman:
         self.points = 5
         self.weapon = None
         self.wear = None
-        self.inventory = [] # carried resources and items
+        self.inventory = [None, None, None] # carried resources and items
 
 
 
@@ -129,7 +129,7 @@ class Tribesman:
         and tribesman already equipped with this item type - returns old one.
         '''
         item.owner = self
-        if item.type == 'weapon':
+        if item.type in ('weapon', 'range'):
             if not self.weapon:
                 self.weapon = item
                 return None
@@ -137,7 +137,7 @@ class Tribesman:
                 returned, self.weapon = self.weapon, item
                 returned.owner = None
                 return returned
-        elif item.type == 'wear':
+        elif item.type == 'armor':
             if not self.wear:
                 self.wear = item
                 return None
@@ -158,7 +158,22 @@ class Tribesman:
         '''
         if self.weapon:
             if self.weapon.consumable:
-                pass
+                found = False
+                for item in self.inventory:
+                    if item:
+                        for consumable_id in self.weapon.consumable:
+                            if consumable_id == item.id:
+                                item.amount -= 1
+                                if item.amount == 0:
+                                    self.inventory.remove(item)
+                                    self.inventory.append(None)
+                                points = self.weapon.hit(consumable_id)
+                                found = True
+                                break
+                    if found:
+                        break
+                else:
+                    points = 1
             else:
                 points = self.weapon.hit()
             if self.weapon.expired_durability():

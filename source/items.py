@@ -70,22 +70,23 @@ class Item:
 
         return  result
 
-    def hit(self):
+    def hit(self, consumable = None):
         '''
         (None) -> int
 
         If current item is a weapon randomly returns damage from points list.
         '''
-        assert self.type in ('weapon', ''),'Non weapon item is called for hit method'
+        assert self.type in ('weapon','range', ''),'Non weapon item is called for hit method'
         assert self.owner,'Item usage without owner'
-        if self.consumable:
-            pass
+        if self.type == 'range':
+            points = Item(consumable).points
+            amount = random.choice(points)
         else:
             amount = random.choice(self.points)
-            if amount > self.owner.points:
-                amount = self.owner.points
-            self.durability -= 1
-            print('generated',amount,'from',self.points,'. Durability', self.durability)
+        if amount > self.owner.points:
+            amount = self.owner.points
+        self.durability -= 1
+        print('generated',amount,'from',self.points,'. Durability', self.durability)
 
         return amount
 
@@ -114,8 +115,8 @@ class Item:
     def __str__(self):
         string = self.get_name()
         if self.type in ('consumable','ammo'):
-            string += ''.join('x',str(self.amount),')')
+            string += ''.join(('(x',str(self.amount),')'))
         else:
-            string += '('+ str(self.durability) + ')'
+            string += ''.join(('(', str(self.durability), ')'))
 
         return string
